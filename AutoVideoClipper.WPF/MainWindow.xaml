@@ -1,0 +1,70 @@
+﻿<Window x:Class="AutoVideoClipper.WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AutoVideoClipper.WPF"
+        mc:Ignorable="d"
+        Icon="Assets/app.ico"
+        Title="短视频自动剪辑" Height="600" Width="820">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Vertical" Grid.Row="0" Margin="0,0,0,8">
+
+            <!-- ✅ 新增输入区域 -->
+            <WrapPanel Margin="0,0,0,6">
+                <TextBlock VerticalAlignment="Center">标题（两个词 空格隔开）：</TextBlock>
+                <TextBox Name="TbTitle" Width="260" Margin="6,0,0,0"/>
+            </WrapPanel>
+
+            <WrapPanel Margin="0,0,0,6">
+                <TextBlock VerticalAlignment="Top" Margin="0,4,0,0">正文内容：</TextBlock>
+                <TextBox Name="TbContent" Width="600" Height="100" TextWrapping="Wrap" AcceptsReturn="True"/>
+            </WrapPanel>
+
+            <!-- ✅ 新增经文输入 -->
+            <WrapPanel Margin="0,0,0,6" x:Name="VerseRow">
+                <TextBlock VerticalAlignment="Center">经文：</TextBlock>
+                <TextBox Name="TbVerse" Width="600" Margin="6,0,0,0" KeyDown="TbVerse_KeyDown" />
+            </WrapPanel>
+
+            <!-- ✅ 新增经文内容输入 -->
+            <WrapPanel Margin="0,0,0,6" x:Name="VerseContentRow">
+                <TextBlock VerticalAlignment="Top" Margin="0,4,0,0">经文内容：</TextBlock>
+                <TextBox Name="TbVerseContent" Width="600" Height="60" TextWrapping="Wrap" AcceptsReturn="True"/>
+            </WrapPanel>
+
+            <!-- ✅ 新增简介输入 -->
+            <WrapPanel Margin="0,0,0,6" x:Name="SummaryRow">
+                <TextBlock VerticalAlignment="Top" Margin="0,4,0,0">简介：</TextBlock>
+                <TextBox Name="TbSummary" Width="600" Height="60" TextWrapping="Wrap" AcceptsReturn="True"/>
+            </WrapPanel>
+
+            <!-- 原视频与音乐选择 -->
+            <WrapPanel Margin="0,0,0,6">
+                <Button Name="BtnPickFolder" Click="BtnPickFolder_Click" Width="140">选择背景视频文件夹</Button>
+                <TextBlock Name="TbFolder" Margin="10,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Width="580"/>
+            </WrapPanel>
+
+            <WrapPanel Margin="0,0,0,6">
+                <Button Name="BtnPickMusicFolder" Click="BtnPickMusicFolder_Click" Width="140">选择背景音乐文件夹</Button>
+                <TextBlock Name="TbMusicFolder" Margin="10,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Width="580"/>
+            </WrapPanel>
+
+            <WrapPanel Margin="0,0,0,6" VerticalAlignment="Center">
+                <TextBlock VerticalAlignment="Center">额外秒数：</TextBlock>
+                <TextBox Name="TbExtraSeconds" Width="60" Text="3" Margin="6,0,12,0"/>
+
+                <Button Name="BtnStart" Click="BtnStart_Click" Width="120">开始生成</Button>
+                <Button Name="BtnOpenWork" Click="BtnOpenWork_Click" Width="120" Margin="8,0,0,0">打开输出文件夹</Button>
+            </WrapPanel>
+
+            <ProgressBar Name="Pb" Height="18" Margin="0,8,0,0" Minimum="0" Maximum="100"/>
+        </StackPanel>
+
+        <TextBox Name="TbLog" Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" IsReadOnly="True"/>
+    </Grid>
+</Window>

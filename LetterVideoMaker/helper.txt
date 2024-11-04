@@ -1,0 +1,3 @@
+pip install moviepy srt
+
+pip install pillow numpy matplotlib

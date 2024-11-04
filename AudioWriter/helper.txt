@@ -1,0 +1,12 @@
+pip install SpeechRecognition
+pip install PyAudio
+pip install pipwin
+pipwin install pyaudio
+
+pip install tkinter
+
+pip install moviepy
+
+pip install pydub
+
+https://ffmpeg.org/download.html
