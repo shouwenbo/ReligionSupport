@@ -1,0 +1,1 @@
+start cmd /k "echo the phrasehelper cmd && c: && cd c:\\site\\phrase\\api && title phrasehelper-9060&& dotnet PhraseHelperApi.dll --urls http://localhost:9060"
