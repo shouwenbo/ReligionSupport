@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -95,19 +96,54 @@ namespace AutoVideoClipper.WPF
 
         private void SavePaths()
         {
-            // AutoClipper.Properties.Settings.Default.LastVideoFolderPath = videoFolderPath;
-            // AutoClipper.Properties.Settings.Default.LastMusicFolderPath = musicFolderPath;
-            // 
-            // // ✅ 保存标题和正文
-            // AutoClipper.Properties.Settings.Default.LastTitle = TbTitle.Text.Trim();
-            // AutoClipper.Properties.Settings.Default.LastContent = TbContent.Text.Trim();
-            // 
-            // // ✅ 保存经文、经文内容、简介
-            // AutoClipper.Properties.Settings.Default.LastVerse = TbVerse.Text.Trim();
-            // AutoClipper.Properties.Settings.Default.LastVerseContent = TbVerseContent.Text.Trim();
-            // AutoClipper.Properties.Settings.Default.LastSummary = TbSummary.Text.Trim();
-            // 
-            // AutoClipper.Properties.Settings.Default.Save();
+            AutoClipper.Properties.Settings.Default.LastVideoFolderPath = videoFolderPath;
+            AutoClipper.Properties.Settings.Default.LastMusicFolderPath = musicFolderPath;
+            
+            // ✅ 保存标题和正文
+            AutoClipper.Properties.Settings.Default.LastTitle = TbTitle.Text.Trim();
+            AutoClipper.Properties.Settings.Default.LastContent = TbContent.Text.Trim();
+            
+            // ✅ 保存经文、经文内容、简介
+            AutoClipper.Properties.Settings.Default.LastVerse = TbVerse.Text.Trim();
+            AutoClipper.Properties.Settings.Default.LastVerseContent = TbVerseContent.Text.Trim();
+            AutoClipper.Properties.Settings.Default.LastSummary = TbSummary.Text.Trim();
+            
+            AutoClipper.Properties.Settings.Default.Save();
+        }
+        #endregion
+
+        #region 公共字体封装
+        /// <summary>
+        /// 获取系统可用的中文字体路径，优先微软雅黑，其次黑体。
+        /// 返回值形如：C\:/Windows/Fonts/msyh.ttc
+        /// </summary>
+        private string GetSystemFontPath()
+        {
+            string fontPath = @"C\:/Windows/Fonts/msyh.ttc";
+            try
+            {
+                if (File.Exists(@"C:\Windows\Fonts\msyh.ttc"))
+                {
+                    fontPath = @"C\:/Windows/Fonts/msyh.ttc";
+                }
+                else if (File.Exists(@"C:\Windows\Fonts\simhei.ttf"))
+                {
+                    fontPath = @"C\:/Windows/Fonts/simhei.ttf";
+                }
+                else if (File.Exists(@"C:\Windows\Fonts\msyh.ttf"))
+                {
+                    fontPath = @"C\:/Windows/Fonts/msyh.ttf";
+                }
+                else
+                {
+                    Log("⚠ 未找到系统中文字体，文字可能无法正常显示！");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("⚠ 字体路径检测出错：" + ex.Message);
+            }
+            return fontPath;
         }
         #endregion
 
@@ -311,188 +347,145 @@ namespace AutoVideoClipper.WPF
 
         private async Task GenerateTempVideoAsync(string inputVideo, string output, double scale, double duration, string? voiceAudio, string titleWord1, string titleWord2)
         {
-            // 获取视频宽高信息
-            var info = await FFmpegRunner.GetVideoInfoAsync(ffprobeExe, inputVideo);
-            int inWidth = info.Width;
-            int inHeight = info.Height;
-
-            // 视频画面缩放、裁剪
-            string scaleFilter = "scale=-1:1440";
-            int cropWidth = Math.Min(1080, (int)Math.Round(inWidth * (1440.0 / inHeight)));
-            string cropFilter = $"crop={cropWidth}:1440:(iw-{cropWidth})/2:0";
-
-            // ======= 标题生成部分 =======
-            string line1 = FFmpegRunner.EscapeFfmpegText(titleWord1);
-            string line2 = FFmpegRunner.EscapeFfmpegText(titleWord2);
-
-            // 字体路径
-            string fontPath = @"C\:/Windows/Fonts/msyh.ttc";
-            if (!File.Exists(@"C:\Windows\Fonts\msyh.ttc"))
+            try
             {
-                if (File.Exists(@"C:\Windows\Fonts\simhei.ttf"))
-                    fontPath = @"C\:/Windows/Fonts/simhei.ttf";
-                else
-                    Log("⚠ 未找到系统字体，文字可能无法正常显示中文！");
-            }
+                // 获取视频宽高信息
+                var info = await FFmpegRunner.GetVideoInfoAsync(ffprobeExe, inputVideo);
+                int inWidth = info.Width;
+                int inHeight = info.Height;
 
-            // ======= 字幕处理部分 =======
-            string? srtFile = null;
-            if (!string.IsNullOrWhiteSpace(voiceAudio))
-            {
-                try
+                // 视频画面缩放、裁剪
+                string scaleFilter = "scale=-1:1440";
+                int cropWidth = Math.Min(1080, (int)Math.Round(inWidth * (1440.0 / inHeight)));
+                string cropFilter = $"crop={cropWidth}:1440:(iw-{cropWidth})/2:0";
+
+                // ======= 标题生成部分 =======
+                string line1 = FFmpegRunner.EscapeFfmpegText(titleWord1);
+                string line2 = FFmpegRunner.EscapeFfmpegText(titleWord2);
+
+                // 字体路径
+                string fontPath = GetSystemFontPath();
+
+                // ======= 字幕处理部分 =======
+                string? srtFile = await new SubtitleGenerator(Log).GenerateSubtitleAsync(voiceAudio, "zh-CN");
+
+                // ======= drawtext 标题滤镜 =======
+                int titleFontSize = 100;
+                string drawText =
+                    $"drawtext=fontfile='{fontPath}':text='{line1}':fontcolor=#FFDE00:fontsize={titleFontSize}:borderw=4:bordercolor=#3C5C37:" +
+                    $"x=(w-text_w)/2:y=h*0.06," +
+                    $"drawtext=fontfile='{fontPath}':text='{line2}':fontcolor=#FFDE00:fontsize={titleFontSize}:borderw=4:bordercolor=#3C5C37:" +
+                    $"x=(w-text_w)/2:y=h*0.15";
+
+                // ======= 核心滤镜组合 =======
+                string filter =
+                    $"[0:v]setpts=PTS*{scale.ToString(System.Globalization.CultureInfo.InvariantCulture)}," +
+                    $"{scaleFilter},{cropFilter},{drawText}";
+
+                // ======= 若有字幕文件，叠加下方字幕 =======
+                if (!string.IsNullOrWhiteSpace(srtFile) && File.Exists(srtFile))
                 {
-                    Log("尝试通过在线接口生成字幕...");
-                    string? subtitleUrl = await new SubtitleGenerator(Log).TryGenerateSubtitleAsync(voiceAudio, "zh-CN");
+                    string subtitleFontName = "Microsoft YaHei";
+                    string tempSrt = Path.Combine(Path.GetDirectoryName(srtFile)!, "temp_subtitle.srt");
 
-                    if (!string.IsNullOrWhiteSpace(subtitleUrl))
+                    var lines = File.ReadAllLines(srtFile, Encoding.UTF8).ToList();
+                    for (int i = 0; i < lines.Count; i++)
                     {
-                        if (subtitleUrl.StartsWith("/"))
-                            subtitleUrl = "https://www.text-to-speech.cn" + subtitleUrl;
-                        else if (!subtitleUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                            subtitleUrl = "https://www.text-to-speech.cn/" + subtitleUrl;
-
-                        Log("✅ 在线字幕生成成功：" + subtitleUrl);
-
-                        string tempDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Temp");
-                        Directory.CreateDirectory(tempDir);
-                        srtFile = Path.Combine(tempDir, Path.GetFileNameWithoutExtension(voiceAudio) + ".srt");
-
-                        using var http = new HttpClient();
-                        try
+                        if (!string.IsNullOrWhiteSpace(lines[i]) &&
+                            !lines[i].Contains("-->") &&
+                            !int.TryParse(lines[i], out _))
                         {
-                            var bytes = await http.GetByteArrayAsync(subtitleUrl);
-                            await File.WriteAllBytesAsync(srtFile, bytes);
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new Exception("❌ 在线字幕下载失败：" + ex.Message);
-                        }
+                            string text = lines[i].Trim();
+                            text = Regex.Replace(text, @"^[，。！？：；、“”‘’""'\s]+", "");
+                            text = Regex.Replace(text, @"[，。！？：；、“”‘’""'\s]+$", "");
 
-                        if (!File.Exists(srtFile))
-                            throw new Exception("❌ 字幕文件下载后不存在！");
-
-                        Log($"✅ 字幕文件已下载: {srtFile}");
-                    }
-                    else
-                    {
-                        throw new Exception("❌ 在线字幕生成接口返回空，生成失败！");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception("❌ 在线字幕生成失败: " + ex.Message);
-                }
-            }
-
-            // ======= drawtext 标题滤镜 =======
-            int titleFontSize = 100;
-            string drawText =
-                $"drawtext=fontfile='{fontPath}':text='{line1}':fontcolor=#FFDE00:fontsize={titleFontSize}:borderw=4:bordercolor=#3C5C37:" +
-                $"x=(w-text_w)/2:y=h*0.06," +
-                $"drawtext=fontfile='{fontPath}':text='{line2}':fontcolor=#FFDE00:fontsize={titleFontSize}:borderw=4:bordercolor=#3C5C37:" +
-                $"x=(w-text_w)/2:y=h*0.15";
-
-            // ======= 核心滤镜组合 =======
-            string filter =
-                $"[0:v]setpts=PTS*{scale.ToString(System.Globalization.CultureInfo.InvariantCulture)}," +
-                $"{scaleFilter},{cropFilter},{drawText}";
-
-            // ======= 若有字幕文件，叠加下方字幕 =======
-            if (!string.IsNullOrWhiteSpace(srtFile) && File.Exists(srtFile))
-            {
-                string subtitleFontName = "Microsoft YaHei";
-                string tempSrt = Path.Combine(Path.GetDirectoryName(srtFile)!, "temp_subtitle.srt");
-
-                var lines = File.ReadAllLines(srtFile, Encoding.UTF8).ToList();
-                for (int i = 0; i < lines.Count; i++)
-                {
-                    if (!string.IsNullOrWhiteSpace(lines[i]) &&
-                        !lines[i].Contains("-->") &&
-                        !int.TryParse(lines[i], out _))
-                    {
-                        string text = lines[i].Trim();
-                        text = Regex.Replace(text, @"^[，。！？：；、“”‘’""'\s]+", "");
-                        text = Regex.Replace(text, @"[，。！？：；、“”‘’""'\s]+$", "");
-
-                        int maxCharsPerLine = 8;
-                        if (text.Length > maxCharsPerLine)
-                        {
-                            var newText = "";
-                            for (int j = 0; j < text.Length; j += maxCharsPerLine)
+                            int maxCharsPerLine = 8;
+                            if (text.Length > maxCharsPerLine)
                             {
-                                if (j > 0) newText += "\\N";
-                                newText += text.Substring(j, Math.Min(maxCharsPerLine, text.Length - j));
+                                var newText = "";
+                                for (int j = 0; j < text.Length; j += maxCharsPerLine)
+                                {
+                                    if (j > 0) newText += "\\N";
+                                    newText += text.Substring(j, Math.Min(maxCharsPerLine, text.Length - j));
+                                }
+                                lines[i] = newText;
                             }
-                            lines[i] = newText;
-                        }
-                        else
-                        {
-                            lines[i] = text;
+                            else
+                            {
+                                lines[i] = text;
+                            }
                         }
                     }
+
+                    File.WriteAllLines(tempSrt, lines, Encoding.UTF8);
+
+                    string escapedSrt = tempSrt.Replace("\\", "/").Replace(":", "\\:");
+                    int subtitleFontSize = 18;
+                    int marginH = (int)(cropWidth * 0.06);
+                    int marginV = 50;
+
+                    string forceStyle =
+                        $"Alignment=2," +
+                        $"MarginV={marginV}," +
+                        $"MarginL={marginH}," +
+                        $"MarginR={marginH}," +
+                        $"Fontname={subtitleFontName}," +
+                        $"Fontsize={subtitleFontSize}," +
+                        $"Outline=2,Shadow=1,BorderStyle=1";
+
+                    filter += $",subtitles='{escapedSrt}':force_style='{forceStyle}'";
                 }
 
-                File.WriteAllLines(tempSrt, lines, Encoding.UTF8);
+                // ======= 生成中央经文字幕（drawtext方式） =======
+                string verseText = TbVerseContent.Text;
+                double verseDuration = 0;
+                double.TryParse(TbExtraSeconds.Text, out verseDuration);
 
-                string escapedSrt = tempSrt.Replace("\\", "/").Replace(":", "\\:");
-                int subtitleFontSize = 18;
-                int marginH = (int)(cropWidth * 0.06);
-                int marginV = 50;
-
-                string forceStyle =
-                    $"Alignment=2," +
-                    $"MarginV={marginV}," +
-                    $"MarginL={marginH}," +
-                    $"MarginR={marginH}," +
-                    $"Fontname={subtitleFontName}," +
-                    $"Fontsize={subtitleFontSize}," +
-                    $"Outline=2,Shadow=1,BorderStyle=1";
-
-                filter += $",subtitles='{escapedSrt}':force_style='{forceStyle}'";
-            }
-
-            // ======= 生成中央经文字幕（drawtext方式） =======
-            string verseText = TbVerseContent.Text;
-            double verseDuration = 0;
-            double.TryParse(TbExtraSeconds.Text, out verseDuration);
-
-            if (!string.IsNullOrWhiteSpace(verseText) && verseDuration > 0)
-            {
-                // 换行处理，每行最多8个字
-                int maxCharsPerLine = 8;
-                var verseLines = new System.Collections.Generic.List<string>();
-                for (int i = 0; i < verseText.Length; i += maxCharsPerLine)
+                if (!string.IsNullOrWhiteSpace(verseText) && verseDuration > 0)
                 {
-                    verseLines.Add(verseText.Substring(i, Math.Min(maxCharsPerLine, verseText.Length - i)));
+                    // 换行处理，每行最多8个字
+                    int maxCharsPerLine = 8;
+                    var verseLines = new System.Collections.Generic.List<string>();
+                    for (int i = 0; i < verseText.Length; i += maxCharsPerLine)
+                    {
+                        verseLines.Add(verseText.Substring(i, Math.Min(maxCharsPerLine, verseText.Length - i)));
+                    }
+                    string verseWithNewLine = string.Join("\\n", verseLines); // drawtext换行符
+
+                    double startTime = duration; // 从视频末尾开始显示
+
+                    int verseFontSize = 18;
+                    filter += $",drawtext=fontfile='{fontPath}':text='{verseWithNewLine}':" +
+                              $"fontcolor=white:fontsize={verseFontSize}:" +
+                              $"x=(w-text_w)/2:y=(h-text_h)/2:" +
+                              $"enable='between(t,{startTime},{startTime + verseDuration})'";
                 }
-                string verseWithNewLine = string.Join("\\n", verseLines); // drawtext换行符
 
-                double startTime = duration; // 从视频末尾开始显示
+                filter += ",format=yuv420p[v]";
 
-                int verseFontSize = 18;
-                filter += $",drawtext=fontfile='{fontPath}':text='{verseWithNewLine}':" +
-                          $"fontcolor=white:fontsize={verseFontSize}:" +
-                          $"x=(w-text_w)/2:y=(h-text_h)/2:" +
-                          $"enable='between(t,{startTime},{startTime + verseDuration})'";
+                // ======= FFmpeg 命令生成 =======
+                string cmd;
+                if (!string.IsNullOrWhiteSpace(voiceAudio))
+                {
+                    cmd = $"-y -i \"{inputVideo}\" -i \"{voiceAudio}\" -filter_complex \"{filter}\" " +
+                          "-map \"[v]\" -map 1:a -r 30 -c:v libx264 -preset veryfast -crf 20 -c:a aac \"" + output + "\"";
+                }
+                else
+                {
+                    cmd = $"-y -i \"{inputVideo}\" -filter_complex \"{filter}\" " +
+                          "-map \"[v]\" -map 0:a -r 30 -c:v libx264 -preset veryfast -crf 20 -c:a aac \"" + output + "\"";
+                }
+
+                await FFmpegRunner.RunAsync(ffmpegExe, cmd, Log);
+                Log("临时视频生成完成: " + output);
+
+
             }
-
-            filter += ",format=yuv420p[v]";
-
-            // ======= FFmpeg 命令生成 =======
-            string cmd;
-            if (!string.IsNullOrWhiteSpace(voiceAudio))
+            catch (Exception)
             {
-                cmd = $"-y -i \"{inputVideo}\" -i \"{voiceAudio}\" -filter_complex \"{filter}\" " +
-                      "-map \"[v]\" -map 1:a -r 30 -c:v libx264 -preset veryfast -crf 20 -c:a aac \"" + output + "\"";
-            }
-            else
-            {
-                cmd = $"-y -i \"{inputVideo}\" -filter_complex \"{filter}\" " +
-                      "-map \"[v]\" -map 0:a -r 30 -c:v libx264 -preset veryfast -crf 20 -c:a aac \"" + output + "\"";
-            }
 
-            await FFmpegRunner.RunAsync(ffmpegExe, cmd, Log);
-            Log("临时视频生成完成: " + output);
+                throw;
+            }
         }
 
 
@@ -574,14 +567,7 @@ namespace AutoVideoClipper.WPF
             string line2 = FFmpegRunner.EscapeFfmpegText(titleWord2);
 
             // 4️⃣ 检查字体路径
-            string fontPath = @"C\:/Windows/Fonts/msyh.ttc";
-            if (!File.Exists(@"C:\Windows\Fonts\msyh.ttc"))
-            {
-                if (File.Exists(@"C:\Windows\Fonts\simhei.ttf"))
-                    fontPath = @"C\:/Windows/Fonts/simhei.ttf";
-                else
-                    Log("⚠ 未找到系统字体，封面文字可能无法显示中文！");
-            }
+            string fontPath = GetSystemFontPath();
 
             // 5️⃣ 绘制标题（与视频一致）
             int titleFontSize = 100;
@@ -681,10 +667,11 @@ namespace AutoVideoClipper.WPF
                 {
                     @"F:\code\ReligionSupport\AutoVideoClipper.WPF\MainWindow.xaml",
                     @"F:\code\ReligionSupport\AutoVideoClipper.WPF\MainWindow.xaml.cs",
-                    @"F:\code\ReligionSupport\AutoVideoClipper.WPF\FFmpegRunner.cs"
+                    //@"F:\code\ReligionSupport\AutoVideoClipper.WPF\FFmpegRunner.cs"
                 };
 
                 var sb = new StringBuilder();
+                sb.AppendLine($"请严格以我提供的代码为基础，在其之上进行修改：");
                 foreach (var file in files)
                 {
                     if (File.Exists(file))
