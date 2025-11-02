@@ -620,7 +620,7 @@ namespace AutoVideoClipper.WPF
             // 7.1️⃣ 用封面图生成 0.1 秒视频（帧率和尺寸与原视频一致，添加静音音轨）
             string coverVideoCmd = $"-y -loop 1 -i \"{coverWithText}\" " +
                                    $"-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 " +
-                                   $"-vf \"scale={width}:{height},setsar={sar}\" " +
+                                   $"-vf \"scale={width}:{height}:force_original_aspect_ratio=decrease,setsar=1\" " +
                                    $"-shortest -t 0.1 -r {fps} -pix_fmt yuv420p -c:v libx264 -c:a aac -b:a 128k \"{coverVideo}\"";
             await FFmpegRunner.RunAsync(ffmpegExe, coverVideoCmd, Log);
 
