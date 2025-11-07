@@ -1,0 +1,58 @@
+﻿<Window x:Class="ImageGroupDownloader.WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ImageGroupDownloader.WPF"
+        mc:Ignorable="d"
+        Icon="Assets/app.ico"
+        Title="图片分组下载器" Height="600" Width="900">
+    <Grid>
+        <Grid Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- 下载地址 -->
+                <RowDefinition Height="Auto"/>
+                <!-- 搜索 -->
+                <RowDefinition Height="*"/>
+                <!-- DataGrid -->
+                <RowDefinition Height="Auto"/>
+                <!-- 进度条 -->
+            </Grid.RowDefinitions>
+
+
+            <!-- 下载地址和文件夹选择 -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Row="0" Margin="0,0,0,8">
+                <TextBlock Text="图片下载地址:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox Name="txtDownloadUrl" Width="450" />
+
+
+                <Button Content="选择文件夹" Click="BtnSelectFolder_Click" Margin="12,0,0,0" />
+                <TextBlock Text="监控文件夹:" VerticalAlignment="Center" Margin="12,0,0,0" />
+                <TextBlock Name="txtWatchFolder" VerticalAlignment="Center" Margin="6,0,0,0" />
+            </StackPanel>
+
+
+            <!-- 搜索框和操作按钮 -->
+            <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,0,0,8">
+                <TextBlock Text="搜索/选择名称:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox Name="txtNameSearch" Width="300" TextChanged="TxtNameSearch_TextChanged" />
+
+                <Button Content="下载到选中分组" Click="BtnDownload_Click" Margin="12,0,0,0" />
+                <Button Content="刷新" Click="BtnRefresh_Click" Margin="6,0,0,0" />
+            </StackPanel>
+
+
+            <!-- 分组列表 -->
+            <DataGrid Name="dgGroups" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="*" />
+                    <DataGridTextColumn Header="数量" Binding="{Binding Count}" Width="120" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <ProgressBar Name="pbDownload" Grid.Row="3" Height="20" Margin="0,6,0,0" Minimum="0" Maximum="100" Visibility="Collapsed"/>
+
+        </Grid>
+    </Grid>
+</Window>
