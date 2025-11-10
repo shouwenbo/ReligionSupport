@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>韩语键盘对照表</AssemblyName>
+
+	<!-- 单文件发布 -->
+	<PublishSingleFile>true</PublishSingleFile>
+	<!-- 包含运行时 -->
+	<SelfContained>false</SelfContained>
+	<!-- 发布模式 -->
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	<Version>1.0.0</Version>
+	<FileVersion>1.0.0</FileVersion>
+	<ApplicationIcon>Assets\app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\app.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="RenameOutput" AfterTargets="Publish">
+  	<Move SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(PublishDir)$(AssemblyName) v$(Version).exe" />
+	  <ItemGroup>
+		  <PdbFiles Include="$(PublishDir)**\*.pdb" />
+	  </ItemGroup>
+	  <Delete Files="@(PdbFiles)" />
+  </Target>
+
+</Project>
