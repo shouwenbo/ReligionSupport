@@ -1,0 +1,244 @@
+﻿using Microsoft.Win32;
+using System;
+using System.IO;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using Xceed.Words.NET;
+
+namespace WordViewer.WPF
+{
+    public partial class MainWindow : Window
+    {
+        private FlowDocument _document;
+        private readonly string workDir;
+
+        // Visual Studio 2022 明亮 & 暗黑主题
+        private enum ThemeMode { Light, Dark }
+        private ThemeMode _currentTheme = ThemeMode.Light;
+
+        // 明亮主题（VS 2022 默认浅色）
+        private readonly SolidColorBrush LightBackground = new SolidColorBrush(Color.FromRgb(250, 250, 250));
+        private readonly SolidColorBrush LightForeground = new SolidColorBrush(Color.FromRgb(30, 30, 30));
+        private readonly SolidColorBrush LightToolbar = new SolidColorBrush(Color.FromRgb(240, 240, 240));
+
+        // 暗黑主题（VS 2022 深色）
+        private readonly SolidColorBrush DarkBackground = new SolidColorBrush(Color.FromRgb(30, 30, 30));
+        private readonly SolidColorBrush DarkForeground = new SolidColorBrush(Color.FromRgb(241, 241, 241));
+        private readonly SolidColorBrush DarkToolbar = new SolidColorBrush(Color.FromRgb(45, 45, 48));
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            workDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "work");
+            EnsureWorkDir();
+
+            _document = new FlowDocument
+            {
+                TextAlignment = TextAlignment.Left,
+                FontFamily = new FontFamily("微软雅黑"),
+                FontSize = 14
+            };
+
+            DocumentViewer.Document = _document;
+            ApplyTheme();
+            OutputSourceFilesToTxt();
+
+            // 文本随窗口宽度自适应
+            DocumentViewer.SizeChanged += (s, e) =>
+            {
+                _document.PageWidth = e.NewSize.Width - 40;
+            };
+
+            // 🚫 禁用 Ctrl + 滚轮缩放行为（关键）
+            DocumentViewer.PreviewMouseWheel += (s, e) =>
+            {
+                if ((Keyboard.IsKeyDown(System.Windows.Input.Key.LeftCtrl) ||
+                     Keyboard.IsKeyDown(System.Windows.Input.Key.RightCtrl)))
+                {
+                    e.Handled = true; // 阻止默认缩放行为
+                }
+            };
+        }
+
+        private void EnsureWorkDir()
+        {
+            if (Directory.Exists(workDir))
+            {
+                DirectoryInfo di = new DirectoryInfo(workDir);
+                foreach (var file in di.GetFiles()) file.Delete();
+                foreach (var dir in di.GetDirectories()) dir.Delete(true);
+            }
+            else Directory.CreateDirectory(workDir);
+        }
+
+        #region 打开文件（支持拖拽）
+        private void OpenFile_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dlg = new OpenFileDialog
+            {
+                Filter = "Word 文档 (*.docx)|*.docx",
+                InitialDirectory = workDir
+            };
+            if (dlg.ShowDialog() == true)
+                LoadWordFile(dlg.FileName);
+        }
+
+        private void Window_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = DragDropEffects.None;
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Length == 1 && Path.GetExtension(files[0]).Equals(".docx", StringComparison.OrdinalIgnoreCase))
+                    e.Effects = DragDropEffects.Copy;
+            }
+            e.Handled = true;
+        }
+
+        private void Window_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Length > 0)
+                {
+                    string file = files[0];
+                    if (Path.GetExtension(file).Equals(".docx", StringComparison.OrdinalIgnoreCase))
+                        LoadWordFile(file);
+                    else
+                        MessageBox.Show("仅支持 .docx 格式的文件。", "格式不支持", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+        }
+
+        private void LoadWordFile(string filePath)
+        {
+            try
+            {
+                using var doc = DocX.Load(filePath);
+                string[] paras = new string[doc.Paragraphs.Count];
+                for (int i = 0; i < doc.Paragraphs.Count; i++)
+                    paras[i] = doc.Paragraphs[i].Text;
+                DisplayParagraphs(paras);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"读取文件失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void DisplayParagraphs(string[] paragraphs)
+        {
+            _document.Blocks.Clear();
+            foreach (var para in paragraphs)
+            {
+                if (!string.IsNullOrWhiteSpace(para))
+                {
+                    Paragraph p = new Paragraph(new Run(para))
+                    {
+                        TextAlignment = TextAlignment.Left,
+                        Margin = new Thickness(0, 0, 0, 5)
+                    };
+                    _document.Blocks.Add(p);
+                }
+            }
+        }
+        #endregion
+
+        #region 主题切换
+        private void ToggleTheme_Click(object sender, RoutedEventArgs e)
+        {
+            _currentTheme = _currentTheme == ThemeMode.Light ? ThemeMode.Dark : ThemeMode.Light;
+            ApplyTheme();
+        }
+
+        private void ApplyTheme()
+        {
+            if (_currentTheme == ThemeMode.Light)
+            {
+                _document.Background = LightBackground;
+                _document.Foreground = LightForeground;
+                MainToolBar.Background = LightToolbar;
+                MainToolBar.Foreground = LightForeground;
+                Background = LightBackground;
+            }
+            else
+            {
+                _document.Background = DarkBackground;
+                _document.Foreground = DarkForeground;
+                MainToolBar.Background = DarkToolbar;
+                MainToolBar.Foreground = DarkForeground;
+                Background = DarkBackground;
+            }
+        }
+        #endregion
+
+        #region 字体大小调节
+        private void IncreaseFont_Click(object sender, RoutedEventArgs e)
+        {
+            _document.FontSize = Math.Min(_document.FontSize + 1, 72);
+        }
+
+        private void DecreaseFont_Click(object sender, RoutedEventArgs e)
+        {
+            _document.FontSize = Math.Max(_document.FontSize - 1, 8);
+        }
+
+        private void ChangeFont_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new System.Windows.Forms.FontDialog();
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                var f = dlg.Font;
+                _document.FontFamily = new FontFamily(f.Name);
+                _document.FontSize = f.Size * 96.0 / 72.0;
+                _document.FontWeight = f.Bold ? FontWeights.Bold : FontWeights.Regular;
+                _document.FontStyle = f.Italic ? FontStyles.Italic : FontStyles.Normal;
+            }
+        }
+        #endregion
+
+        #region 打开Work目录
+        private void OpenWorkFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (Directory.Exists(workDir))
+                System.Diagnostics.Process.Start("explorer.exe", workDir);
+        }
+        #endregion
+
+        #region 输出源码
+        private void OutputSourceFilesToTxt()
+        {
+            try
+            {
+                string[] files =
+                {
+                    @"F:\code\ReligionSupport\WordViewer.WPF\MainWindow.xaml",
+                    @"F:\code\ReligionSupport\WordViewer.WPF\MainWindow.xaml.cs",
+                };
+                var sb = new StringBuilder();
+                sb.AppendLine("请严格以我提供的代码为基础，在其之上进行修改：");
+                foreach (var file in files)
+                {
+                    if (File.Exists(file))
+                    {
+                        sb.AppendLine($"===== 文件: {file} =====");
+                        sb.AppendLine(File.ReadAllText(file));
+                        sb.AppendLine();
+                    }
+                    else sb.AppendLine($"===== 文件未找到: {file} =====\n");
+                }
+                File.WriteAllText(Path.Combine(workDir, "AllSourceOutput.txt"), sb.ToString(), Encoding.UTF8);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"输出源码失败: {ex.Message}");
+            }
+        }
+        #endregion
+    }
+}

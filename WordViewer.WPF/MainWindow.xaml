@@ -1,0 +1,35 @@
+﻿<Window x:Class="WordViewer.WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Word 浏览器"
+        Icon="pack://application:,,,/Assets/app.ico"
+        Height="600" Width="800"
+        WindowStartupLocation="CenterScreen"
+        AllowDrop="True"
+        Drop="Window_Drop"
+        DragOver="Window_DragOver">
+    <DockPanel>
+        <!-- 工具栏 -->
+        <ToolBar DockPanel.Dock="Top" Name="MainToolBar">
+            <Button Content="打开" Click="OpenFile_Click"/>
+            <Button Content="切换主题" Click="ToggleTheme_Click"/>
+            <Separator/>
+            <Button Content="字体＋" Click="IncreaseFont_Click"/>
+            <Button Content="字体－" Click="DecreaseFont_Click"/>
+            <Separator/>
+            <Button Content="字体" Click="ChangeFont_Click"/>
+            <Button Content="打开Work目录" Click="OpenWorkFolder_Click"/>
+        </ToolBar>
+
+        <!-- 可滚动显示 -->
+        <ScrollViewer Name="ScrollViewer"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+            <FlowDocumentScrollViewer Name="DocumentViewer"
+                                      Zoom="100"
+                                      IsToolBarVisible="False"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Auto"/>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

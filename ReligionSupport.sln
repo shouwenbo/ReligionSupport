@@ -39,8 +39,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoMediaConvert", "AutoMed
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "LetterVideoMaker", "LetterVideoMaker\LetterVideoMaker.pyproj", "{CBD0D7A5-7BBC-44A0-A8D4-40AD3AB46AAE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoFileDownloaderApp", "AutoFileDownloaderApp\AutoFileDownloaderApp.csproj", "{6955A9FD-CD24-4F3B-981E-69A6594134CC}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArticlePromptCrafter", "ArticlePromptCrafter\ArticlePromptCrafter.csproj", "{ADEB4053-D6B3-477B-840A-6921E97DA12F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoFetchApp", "VideoFetchApp\VideoFetchApp.csproj", "{98428EAA-076F-478B-9D68-029800DDEED1}"
@@ -54,6 +52,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageGroupDownloader.WPF", "ImageGroupDownloader.WPF\ImageGroupDownloader.WPF.csproj", "{36734520-1B9D-441B-AA3F-C2328AFE5313}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KoreanSoftKeyboard.WPF", "KoreanSoftKeyboard.WPF\KoreanSoftKeyboard.WPF.csproj", "{436822C7-4766-4FB9-BC89-DBBD5DD16415}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordViewer.WPF", "WordViewer.WPF\WordViewer.WPF.csproj", "{C3021C0A-B365-4263-944A-41E96B477ECA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -251,22 +251,6 @@ Global
 		{CBD0D7A5-7BBC-44A0-A8D4-40AD3AB46AAE}.Release|ARM64.ActiveCfg = Release|Any CPU
 		{CBD0D7A5-7BBC-44A0-A8D4-40AD3AB46AAE}.Release|x64.ActiveCfg = Release|Any CPU
 		{CBD0D7A5-7BBC-44A0-A8D4-40AD3AB46AAE}.Release|x86.ActiveCfg = Release|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Debug|ARM64.ActiveCfg = Debug|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Debug|ARM64.Build.0 = Debug|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Debug|x64.Build.0 = Debug|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Debug|x86.Build.0 = Debug|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Release|ARM64.ActiveCfg = Release|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Release|ARM64.Build.0 = Release|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Release|x64.ActiveCfg = Release|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Release|x64.Build.0 = Release|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Release|x86.ActiveCfg = Release|Any CPU
-		{6955A9FD-CD24-4F3B-981E-69A6594134CC}.Release|x86.Build.0 = Release|Any CPU
 		{ADEB4053-D6B3-477B-840A-6921E97DA12F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ADEB4053-D6B3-477B-840A-6921E97DA12F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ADEB4053-D6B3-477B-840A-6921E97DA12F}.Debug|ARM64.ActiveCfg = Debug|Any CPU
@@ -379,6 +363,22 @@ Global
 		{436822C7-4766-4FB9-BC89-DBBD5DD16415}.Release|x64.Build.0 = Release|Any CPU
 		{436822C7-4766-4FB9-BC89-DBBD5DD16415}.Release|x86.ActiveCfg = Release|Any CPU
 		{436822C7-4766-4FB9-BC89-DBBD5DD16415}.Release|x86.Build.0 = Release|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Debug|x64.Build.0 = Debug|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Debug|x86.Build.0 = Debug|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Release|ARM64.Build.0 = Release|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Release|x64.ActiveCfg = Release|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Release|x64.Build.0 = Release|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Release|x86.ActiveCfg = Release|Any CPU
+		{C3021C0A-B365-4263-944A-41E96B477ECA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
