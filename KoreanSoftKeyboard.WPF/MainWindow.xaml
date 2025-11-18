@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KoreanSoftKeyboard.WPF"
         mc:Ignorable="d"
+        Icon="pack://application:,,,/Assets/app.ico"
         Title="韩语键盘对照表" 
         Width="{Binding RelativeSource={RelativeSource Self}, Path=Height, Converter={StaticResource RatioConverter}}"
         Height="420"
