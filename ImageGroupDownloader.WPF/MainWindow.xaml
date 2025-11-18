@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ImageGroupDownloader.WPF"
         mc:Ignorable="d"
-        Icon="Assets/app.ico"
+        Icon="pack://application:,,,/Assets/app.ico"
         Title="图片分组下载器" Height="600" Width="900">
     <Grid>
         <Grid Margin="10">
