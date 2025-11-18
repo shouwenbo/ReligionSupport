@@ -179,8 +179,7 @@ namespace ImageGroupDownloader.WPF
 
                 if (!string.IsNullOrWhiteSpace(url))
                 {
-                    using var client = new HttpClient();
-                    using var resp = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                    using var resp = await HttpUtil.GetWithRetryAsync(url);
                     resp.EnsureSuccessStatusCode();
 
                     ext = Path.GetExtension(new Uri(url).AbsolutePath).TrimStart('.').ToLower();
@@ -239,6 +238,7 @@ namespace ImageGroupDownloader.WPF
                 {
                     @"F:\code\ReligionSupport\ImageGroupDownloader.WPF\MainWindow.xaml",
                     @"F:\code\ReligionSupport\ImageGroupDownloader.WPF\MainWindow.xaml.cs",
+                    @"F:\code\ReligionSupport\ImageGroupDownloader.WPF\HttpUtil.cs",
                 };
 
                 var sb = new StringBuilder();
