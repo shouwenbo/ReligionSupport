@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -7,6 +8,8 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Xml.Linq;
+using Xceed.Document.NET;
 using Xceed.Words.NET;
 
 namespace WordViewer.WPF
@@ -15,6 +18,7 @@ namespace WordViewer.WPF
     {
         private FlowDocument _document;
         private readonly string workDir;
+        private string _currentFilePath = string.Empty;
 
         // Visual Studio 2022 明亮 & 暗黑主题
         private enum ThemeMode { Light, Dark }
@@ -124,6 +128,7 @@ namespace WordViewer.WPF
                 for (int i = 0; i < doc.Paragraphs.Count; i++)
                     paras[i] = doc.Paragraphs[i].Text;
                 DisplayParagraphs(paras);
+                _currentFilePath = filePath;
             }
             catch (Exception ex)
             {
@@ -138,7 +143,7 @@ namespace WordViewer.WPF
             {
                 if (!string.IsNullOrWhiteSpace(para))
                 {
-                    Paragraph p = new Paragraph(new Run(para))
+                    System.Windows.Documents.Paragraph p = new System.Windows.Documents.Paragraph(new System.Windows.Documents.Run(para))
                     {
                         TextAlignment = TextAlignment.Left,
                         Margin = new Thickness(0, 0, 0, 5)
@@ -238,6 +243,92 @@ namespace WordViewer.WPF
             {
                 MessageBox.Show($"输出源码失败: {ex.Message}");
             }
+        }
+        #endregion
+
+        #region 追加文本
+        private void AppendTextButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_currentFilePath) || !File.Exists(_currentFilePath))
+            {
+                MessageBox.Show("请先打开一个 Word 文档。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new AppendTextWindow { Owner = this };
+            if (dialog.ShowDialog() != true) return;
+
+            var payload = dialog.InputText?.Replace("\r\n", "\n").TrimEnd();
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                MessageBox.Show("请输入要追加的内容。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                AppendTextToWord(_currentFilePath!, payload);
+                MessageBox.Show("文本追加成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                Process.Start(new ProcessStartInfo { FileName = _currentFilePath, UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"追加文本失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void AppendTextToWord(string filePath, string inputText)
+        {
+            var today = DateTime.Now;
+            var headerLine = $"{today.Year - 1983}{today:MMdd}整理：";
+
+            using (var document = DocX.Load(filePath))
+            {
+                document.InsertParagraph(); // 空一行
+                InsertFormattedParagraph(document, headerLine);
+
+                foreach (var line in inputText.Split('\n'))
+                {
+                    InsertFormattedParagraph(document, line);
+                }
+
+                document.Save();
+            }
+        }
+
+        private static void InsertFormattedParagraph(DocX document, string content)
+        {
+            var paragraph = document.InsertParagraph(content ?? string.Empty);
+            ApplyParagraphFormatting(paragraph);
+        }
+
+        private static void ApplyParagraphFormatting(Xceed.Document.NET.Paragraph paragraph)
+        {
+            paragraph.Font("KaiTi").FontSize(11);
+            paragraph.SpacingBefore(0).SpacingAfter(0);
+            paragraph.SetLineSpacing(LineSpacingType.Line, 12);
+            DisableSnapToGrid(paragraph);
+        }
+
+        private static void DisableSnapToGrid(Xceed.Document.NET.Paragraph paragraph)
+        {
+            XNamespace w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+            var xml = paragraph.Xml;
+            var pPr = xml.Element(w + "pPr");
+            if (pPr == null)
+            {
+                pPr = new XElement(w + "pPr");
+                xml.AddFirst(pPr);
+            }
+
+            var snap = pPr.Element(w + "snapToGrid");
+            if (snap == null)
+            {
+                snap = new XElement(w + "snapToGrid");
+                pPr.Add(snap);
+            }
+
+            snap.SetAttributeValue(w + "val", "0");
         }
         #endregion
     }

@@ -19,6 +19,7 @@
             <Separator/>
             <Button Content="字体" Click="ChangeFont_Click"/>
             <Button Content="打开Work目录" Click="OpenWorkFolder_Click"/>
+            <Button Content="追加文本" Click="AppendTextButton_Click"/>
         </ToolBar>
 
         <!-- 可滚动显示 -->
