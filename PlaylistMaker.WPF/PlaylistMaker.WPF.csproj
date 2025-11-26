@@ -1,0 +1,128 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>PlaylistMaker.WPF</RootNamespace>
+    <AssemblyName>播放列表工厂</AssemblyName>
+    <ApplicationTitle>播放列表工厂</ApplicationTitle>
+    <NeutralLanguage>zh-CN</NeutralLanguage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>none</DebugType>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateAppIcon>false</GenerateAppIcon>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="CustomSelectFileDlg" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\AppIcon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <UsingTask TaskName="GenerateAppIcon" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <OutputFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System" />
+      <Reference Include="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var directory = Path.GetDirectoryName(OutputFile);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        const int width = 16;
+        const int height = 16;
+        var maskStride = ((width + 31) / 32) * 4;
+        var pixelDataSize = width * height * 4;
+        var maskSize = maskStride * height;
+        var imageSize = 40 + pixelDataSize + maskSize;
+
+        using var stream = new FileStream(OutputFile, FileMode.Create, FileAccess.Write, FileShare.None);
+        using var writer = new BinaryWriter(stream);
+
+        writer.Write((ushort)0);
+        writer.Write((ushort)1);
+        writer.Write((ushort)1);
+        writer.Write((byte)width);
+        writer.Write((byte)height);
+        writer.Write((byte)0);
+        writer.Write((byte)0);
+        writer.Write((ushort)1);
+        writer.Write((ushort)32);
+        writer.Write(imageSize);
+        writer.Write(22);
+
+        writer.Write(40);
+        writer.Write(width);
+        writer.Write(height * 2);
+        writer.Write((ushort)1);
+        writer.Write((ushort)32);
+        writer.Write(0);
+        writer.Write(pixelDataSize);
+        writer.Write(0);
+        writer.Write(0);
+        writer.Write(0);
+        writer.Write(0);
+
+        var palette = new[]
+        {
+            new byte[] {0x8A, 0x3A, 0x1E},
+            new byte[] {0xE5, 0x46, 0x4F},
+            new byte[] {0x15, 0xCC, 0xFA},
+            new byte[] {0x4A, 0xA3, 0x16}
+        };
+
+        for (int row = 0; row < height; row++)
+        {
+            var color = palette[row / 4];
+            for (int col = 0; col < width; col++)
+            {
+                writer.Write(color[0]);
+                writer.Write(color[1]);
+                writer.Write(color[2]);
+                writer.Write((byte)0xFF);
+            }
+        }
+
+        for (int i = 0; i < maskSize; i++)
+        {
+            writer.Write((byte)0x00);
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+</Project>

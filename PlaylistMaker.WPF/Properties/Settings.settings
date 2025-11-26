@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)">
+  <Profiles />
+  <Settings>
+    <Setting Name="LastScanFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)"></Value>
+    </Setting>
+    <Setting Name="Extensions" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.mp3;.mp4</Value>
+    </Setting>
+    <Setting Name="IncludeSubdirectories" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="AutoOpenAfterExport" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="PlaylistTitle" Type="System.String" Scope="User">
+      <Value Profile="(Default)">播放列表</Value>
+    </Setting>
+    <Setting Name="ThemeVariant" Type="System.String" Scope="User">
+      <Value Profile="(Default)">MicaLight</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
