@@ -1,0 +1,63 @@
+<UserControl x:Class="SlideExtractor.WPF.Views.SlideSelectionView"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:properties="clr-namespace:SlideExtractor.WPF.Properties">
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="*" />
+		</Grid.RowDefinitions>
+
+		<StackPanel Orientation="Horizontal">
+			<Button Content="全选" Command="{Binding SelectAllCommand}" Margin="0,0,10,0" />
+			<Button Content="取消全选" Command="{Binding DeselectAllCommand}" Margin="0,0,10,0" />
+			<Button Content="反选" Command="{Binding InvertSelectionCommand}" Margin="0,0,10,0" />
+			<ComboBox Width="180" SelectedValue="{Binding Filter}" SelectedValuePath="Tag" Margin="8,0,0,0">
+				<ComboBoxItem Content="显示全部" Tag="All" />
+				<ComboBoxItem Content="仅含文字" Tag="HasText" />
+				<ComboBoxItem Content="仅无文字" Tag="NoText" />
+			</ComboBox>
+		</StackPanel>
+
+		<ScrollViewer Grid.Row="1" Margin="0,12,0,0">
+			<ItemsControl ItemsSource="{Binding FilteredSlides}">
+				<ItemsControl.ItemsPanel>
+					<ItemsPanelTemplate>
+						<WrapPanel />
+					</ItemsPanelTemplate>
+				</ItemsControl.ItemsPanel>
+				<ItemsControl.ItemTemplate>
+					<DataTemplate>
+						<Border Width="{Binding Source={x:Static properties:Settings.Default}, Path=ThumbnailSize}"
+								Margin="4"
+								Padding="1"
+								Background="{DynamicResource CardBrush}"
+								BorderBrush="{DynamicResource BorderBrush}"
+								BorderThickness="1"
+								CornerRadius="4">
+							<StackPanel>
+								<Image Source="{Binding ThumbnailPath}"
+									   Height="{Binding Source={x:Static properties:Settings.Default}, Path=ThumbnailSize}"
+									   Margin="0"
+									   Stretch="Uniform"
+									   RenderOptions.BitmapScalingMode="HighQuality"
+									   SnapsToDevicePixels="True" />
+								<CheckBox Content="选中"
+										  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+										  Margin="2,2,2,0"
+										  Padding="0,2" />
+								<TextBlock Text="{Binding Timestamp, StringFormat=hh\\:mm\\:ss}"
+										   Margin="2,2,2,0" />
+								<TextBlock Text="{Binding OcrText}"
+										   TextWrapping="Wrap"
+										   Margin="2,2,2,2"
+										   Foreground="{DynamicResource MutedForegroundBrush}"
+										   FontSize="11" />
+							</StackPanel>
+						</Border>
+					</DataTemplate>
+				</ItemsControl.ItemTemplate>
+			</ItemsControl>
+		</ScrollViewer>
+	</Grid>
+</UserControl>

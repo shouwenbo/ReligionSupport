@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings"
+			  CurrentProfile="(Default)">
+	<Profiles />
+	<Settings>
+		<Setting Name="LastVideoPath" Type="System.String" Scope="User">
+			<Value Profile="(Default)" />
+		</Setting>
+		<Setting Name="RecentFiles" Type="System.Collections.Specialized.StringCollection" Scope="User">
+			<Value Profile="(Default)" />
+		</Setting>
+		<Setting Name="FrameInterval" Type="System.Int32" Scope="User">
+			<Value Profile="(Default)">30</Value>
+		</Setting>
+		<Setting Name="HashThreshold" Type="System.Int32" Scope="User">
+			<Value Profile="(Default)">5</Value>
+		</Setting>
+		<Setting Name="TesseractPath" Type="System.String" Scope="User">
+			<Value Profile="(Default)">C:\Program Files\Tesseract-OCR\tesseract.exe</Value>
+		</Setting>
+		<Setting Name="OcrLanguages" Type="System.String" Scope="User">
+			<Value Profile="(Default)">eng+chi_sim</Value>
+		</Setting>
+		<Setting Name="OutputDirectory" Type="System.String" Scope="User">
+			<Value Profile="(Default)">%USERPROFILE%\Documents\SlideExtractor</Value>
+		</Setting>
+		<Setting Name="WindowWidth" Type="System.Double" Scope="User">
+			<Value Profile="(Default)">1280</Value>
+		</Setting>
+		<Setting Name="WindowHeight" Type="System.Double" Scope="User">
+			<Value Profile="(Default)">800</Value>
+		</Setting>
+		<Setting Name="WindowLeft" Type="System.Double" Scope="User">
+			<Value Profile="(Default)">100</Value>
+		</Setting>
+		<Setting Name="WindowTop" Type="System.Double" Scope="User">
+			<Value Profile="(Default)">100</Value>
+		</Setting>
+		<Setting Name="Theme" Type="System.String" Scope="User">
+			<Value Profile="(Default)">Dark</Value>
+		</Setting>
+		<Setting Name="ThumbnailSize" Type="System.Int32" Scope="User">
+			<Value Profile="(Default)">180</Value>
+		</Setting>
+		<Setting Name="ThumbnailColumns" Type="System.Int32" Scope="User">
+			<Value Profile="(Default)">4</Value>
+		</Setting>
+		<Setting Name="AutoSaveEnabled" Type="System.Boolean" Scope="User">
+			<Value Profile="(Default)">True</Value>
+		</Setting>
+		<Setting Name="LastExportFormat" Type="System.String" Scope="User">
+			<Value Profile="(Default)">PPTX</Value>
+		</Setting>
+		<Setting Name="DefaultNamingRule" Type="System.String" Scope="User">
+			<Value Profile="(Default)">[{date}]_{video}_{index}</Value>
+		</Setting>
+		<Setting Name="TempRetentionHours" Type="System.Int32" Scope="User">
+			<Value Profile="(Default)">24</Value>
+		</Setting>
+		<Setting Name="DragDropEnabled" Type="System.Boolean" Scope="User">
+			<Value Profile="(Default)">True</Value>
+		</Setting>
+		<Setting Name="IsFirstRun" Type="System.Boolean" Scope="User">
+			<Value Profile="(Default)">True</Value>
+		</Setting>
+		<Setting Name="UiLanguage" Type="System.String" Scope="User">
+			<Value Profile="(Default)">zh-CN</Value>
+		</Setting>
+		<Setting Name="ExportQuality" Type="System.String" Scope="User">
+			<Value Profile="(Default)">High</Value>
+		</Setting>
+		<Setting Name="ImageFormat" Type="System.String" Scope="User">
+			<Value Profile="(Default)">JPG</Value>
+		</Setting>
+		<Setting Name="ImageQuality" Type="System.Int32" Scope="User">
+			<Value Profile="(Default)">90</Value>
+		</Setting>
+		<Setting Name="EnableBatchMode" Type="System.Boolean" Scope="User">
+			<Value Profile="(Default)">False</Value>
+		</Setting>
+		<Setting Name="MaxConcurrentTasks" Type="System.Int32" Scope="User">
+			<Value Profile="(Default)">4</Value>
+		</Setting>
+		<Setting Name="MemoryLimitMB" Type="System.Int32" Scope="User">
+			<Value Profile="(Default)">2048</Value>
+		</Setting>
+		<Setting Name="LogLevel" Type="System.String" Scope="User">
+			<Value Profile="(Default)">Information</Value>
+		</Setting>
+	</Settings>
+</SettingsFile>

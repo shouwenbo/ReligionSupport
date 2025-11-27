@@ -1,0 +1,83 @@
+<UserControl x:Class="SlideExtractor.WPF.Views.SettingsView"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 mc:Ignorable="d">
+	<TabControl>
+		<TabItem Header="视频">
+			<StackPanel Margin="12">
+				<TextBlock Text="提示：调大帧间隔（帧或秒）即可减少捕捉的总帧数。" Margin="0,0,0,12"
+				   Foreground="{DynamicResource MutedForegroundBrush}" />
+				<TextBlock Text="当前视频总帧数："
+				   Foreground="{DynamicResource MutedForegroundBrush}" />
+				<TextBlock Text="{Binding TotalFramesLabel}" Margin="0,0,0,8" />
+				<TextBlock Text="视频长度：" Foreground="{DynamicResource MutedForegroundBrush}" />
+				<TextBlock Text="{Binding DurationLabel}" Margin="0,0,0,8" />
+				<TextBlock Text="预计采样帧数：" Foreground="{DynamicResource MutedForegroundBrush}" />
+				<TextBlock Text="{Binding EstimatedSamplesLabel}" Margin="0,0,0,12" />
+
+				<StackPanel Orientation="Horizontal" Margin="0,0,0,12"
+					ToolTip="增大帧间隔（帧）= 更少的采样帧数">
+					<TextBlock Text="帧间隔 (帧)" Width="140" VerticalAlignment="Center" />
+					<Slider Minimum="1" Maximum="240" Value="{Binding FrameInterval, Mode=TwoWay}" Width="220"
+						AutoToolTipPlacement="TopLeft" AutoToolTipPrecision="0" TickFrequency="10" IsSnapToTickEnabled="False" />
+					<TextBlock Text="{Binding FrameInterval}" Margin="8,0,0,0" VerticalAlignment="Center" />
+				</StackPanel>
+
+				<StackPanel Orientation="Horizontal" Margin="0,0,0,12"
+					ToolTip="按秒设置采样间隔，调大即可进一步减少帧数">
+					<TextBlock Text="帧间隔 (秒)" Width="140" VerticalAlignment="Center" />
+					<Slider Minimum="0.5" Maximum="10" Value="{Binding FrameIntervalSeconds, Mode=TwoWay}" Width="220"
+						AutoToolTipPlacement="TopLeft" AutoToolTipPrecision="2" TickFrequency="0.5" />
+					<TextBox Text="{Binding FrameIntervalSeconds, Mode=TwoWay, StringFormat=F2}" Width="80" Margin="8,0,0,0" />
+				</StackPanel>
+				<TextBlock Text="哈希阈值越小，相似幻灯片越少。" Margin="0,0,0,8"
+				   Foreground="{DynamicResource MutedForegroundBrush}" />
+				<StackPanel Orientation="Horizontal">
+					<TextBlock Text="哈希差异阈值" Width="140" VerticalAlignment="Center" />
+					<Slider Minimum="1" Maximum="20" Value="{Binding HashThreshold, Mode=TwoWay}" Width="220" />
+					<TextBlock Text="{Binding HashThreshold}" Margin="8,0,0,0" VerticalAlignment="Center" />
+				</StackPanel>
+			</StackPanel>
+		</TabItem>
+		<TabItem Header="OCR">
+			<StackPanel Margin="12">
+				<TextBlock Text="Tesseract 路径" />
+				<TextBox Text="{Binding TesseractPath}" Margin="0,0,0,6" />
+				<Button Content="浏览" Command="{Binding BrowseTesseractCommand}" Margin="0,0,0,12" />
+				<TextBlock Text="OCR 语言（例如：eng=英语，chi_sim=简体中文，可用 eng+chi_sim）" />
+				<TextBox Text="{Binding OcrLanguages}" Margin="0,4,0,0" />
+			</StackPanel>
+		</TabItem>
+		<TabItem Header="导出">
+			<StackPanel Margin="12">
+				<TextBlock Text="输出目录" />
+				<TextBox Text="{Binding OutputDirectory}" Margin="0,0,0,6" />
+				<Button Content="选择目录" Command="{Binding BrowseOutputCommand}" Margin="0,0,0,12" />
+				<ComboBox SelectedValue="{Binding ImageFormat}" Margin="0,0,0,12">
+					<ComboBoxItem Content="JPG" />
+					<ComboBoxItem Content="PNG" />
+				</ComboBox>
+				<TextBlock Text="{Binding ImageQuality, StringFormat=图片质量：{0}%}" Foreground="{DynamicResource MutedForegroundBrush}" />
+				<Slider Minimum="50" Maximum="100" Value="{Binding ImageQuality}" TickFrequency="5"
+					AutoToolTipPlacement="TopLeft" />
+			</StackPanel>
+		</TabItem>
+		<TabItem Header="外观">
+			<StackPanel Margin="12">
+				<TextBlock Text="{Binding ThumbnailSize, StringFormat=缩略图大小：{0}px}" Foreground="{DynamicResource MutedForegroundBrush}" />
+				<Slider Minimum="100" Maximum="300" Value="{Binding ThumbnailSize}" TickFrequency="20" AutoToolTipPlacement="TopLeft" />
+				<TextBlock Text="{Binding ThumbnailColumns, StringFormat=显示列数：{0}}" Margin="0,12,0,0"
+					   Foreground="{DynamicResource MutedForegroundBrush}" />
+				<Slider Minimum="2" Maximum="8" Value="{Binding ThumbnailColumns}" TickFrequency="1" AutoToolTipPlacement="TopLeft" />
+			</StackPanel>
+		</TabItem>
+		<TabItem Header="操作">
+			<StackPanel Margin="12">
+				<Button Content="保存设置" Command="{Binding SaveCommand}" Margin="0,0,0,12" />
+				<Button Content="重置" Command="{Binding ResetCommand}" />
+			</StackPanel>
+		</TabItem>
+	</TabControl>
+</UserControl>
