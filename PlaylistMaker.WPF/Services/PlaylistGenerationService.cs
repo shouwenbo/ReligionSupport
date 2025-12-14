@@ -114,10 +114,8 @@ public sealed class PlaylistGenerationService : IPlaylistGenerationService
             // 检查取消请求
             cancellationToken.ThrowIfCancellationRequested();
             
-            // 将文件路径转换为 URI 格式
-            // URL 编码确保特殊字符（如空格、中文）被正确处理
-            var encodedPath = "file:///" + WebUtility.UrlEncode(file.Replace("\\", "/"))
-                .Replace("%3A", ":");  // 保留驱动器盘符的冒号
+            // 正确生成本地文件 URI，防止特殊字符导致 VLC 无法播放
+            var encodedPath = new Uri(file).AbsoluteUri;
 
             // 创建轨道元素
             var track = new XElement(Xspf + "track",
