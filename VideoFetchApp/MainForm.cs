@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using YoutubeExplode;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Header;
 
 namespace VideoFetchApp
@@ -16,9 +15,9 @@ namespace VideoFetchApp
         {
             using (FolderBrowserDialog dialog = new FolderBrowserDialog())
             {
-                dialog.Description = "ÇëÑ¡ÔñÒ»¸öÎÄ¼ş¼Ğ";
-                dialog.UseDescriptionForTitle = true; // Ê¹ÓÃ Description ×÷Îª´°¿Ú±êÌâ
-                dialog.ShowNewFolderButton = true;    // ÔÊĞíĞÂ½¨ÎÄ¼ş¼Ğ
+                dialog.Description = "è¯·é€‰æ‹©ä¸€ä¸ªæ–‡ä»¶å¤¹";
+                dialog.UseDescriptionForTitle = true; // ä½¿ç”¨ Description ä½œä¸ºçª—å£æ ‡é¢˜
+                dialog.ShowNewFolderButton = true;    // å…è®¸æ–°å»ºæ–‡ä»¶å¤¹
 
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
@@ -35,7 +34,7 @@ namespace VideoFetchApp
             string url = this.txt_video_link.Text.Trim();
             if (string.IsNullOrWhiteSpace(url))
             {
-                MessageBox.Show("ÇëÊäÈë YouTube ÊÓÆµÁ´½Ó£¡");
+                MessageBox.Show("è¯·è¾“å…¥ YouTube è§†é¢‘é“¾æ¥ï¼");
                 return;
             }
 
@@ -59,7 +58,7 @@ namespace VideoFetchApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("³ö´í£º" + ex.Message);
+                MessageBox.Show("é”™è¯¯ï¼š" + ex.Message);
             }
             finally
             {

@@ -364,7 +364,25 @@ FodyWeavers.xsd
 wwwroot/phrase/
 /TextOCR/output_subtitles.txt
 
+# 大文件 - ffmpeg 和下载工具
 ffmpeg.exe
 ffprobe.exe
+yt-dlp.exe
+
+# Assets 文件夹中的大文件
+**/Assets/ffmpeg.exe
+**/Assets/ffprobe.exe
+**/Assets/yt-dlp.exe
+
+# 发布输出文件夹
+publish/
+发布/
+
+# 媒体文件
 *.mp4
 *.mp3
+*.m4a
+*.webm
+
+# 日志文件
+log.txt

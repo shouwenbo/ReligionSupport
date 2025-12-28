@@ -1,107 +1,65 @@
 ﻿using System.Data;
 using System.Diagnostics;
-using YoutubeExplode;
+using System.Text.RegularExpressions;
 
 namespace VideoFetchApp
 {
     public partial class YoutubeDownloader : Form
     {
+        private readonly string _url;
+        private readonly string _outputPath;
+
         public YoutubeDownloader(string url, string outputPath)
         {
             InitializeComponent();
+            _url = url;
+            _outputPath = outputPath;
 
+            // 等待窗口加载完成后再启动下载
+            this.Load += YoutubeDownloader_Load;
+        }
+
+        private void YoutubeDownloader_Load(object? sender, EventArgs e)
+        {
+            // 窗口已加载，现在可以安全地启动下载任务
             Task.Run(() =>
             {
-                var thread = new Thread(async () =>
+                var thread = new Thread(() =>
                 {
                     try
                     {
-                        this.bar_download.Style = ProgressBarStyle.Marquee;
-
-                        this.lbl_status.Text = "正在下载视频，请稍候...";
-                        var youtube = new YoutubeClient();
-
-                        this.lbl_status.Text = "正在获取视频信息...";
-                        var video = await youtube.Videos.GetAsync(url);
-
-                        this.lbl_status.Text = $"视频标题：{video.Title}";
-                        this.lbl_status.Text = $"视频时长：{video.Duration?.ToString() ?? "未知"}";
-                        this.lbl_status.Text = $"视频作者：{video.Author.ChannelTitle}";
-
-                        this.lbl_status.Text = "正在获取视频流信息...";
-                        var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
-
-                        this.lbl_status.Text = "正在选择最高质量的视频和音频流...";
-                        var videoStreamInfo = streamManifest
-                            .GetVideoOnlyStreams()
-                            .OrderByDescending(s => s.VideoQuality.MaxHeight)
-                            .First();
-
-                        this.lbl_status.Text = "正在选择最高质量的音频流...";
-                        var audioStreamInfo = streamManifest
-                            .GetAudioOnlyStreams()
-                            .OrderByDescending(s => s.Bitrate)
-                            .First();
-
-                        this.lbl_status.Text = "正在创建视频临时文件...";
-                        var tempVideoPath = Path.GetTempFileName() + "." + videoStreamInfo.Container.Name;
-
-                        this.lbl_status.Text = "正在创建音频临时文件...";
-                        var tempAudioPath = Path.GetTempFileName() + "." + audioStreamInfo.Container.Name;
-
-                        this.lbl_status.Text = "正在下载视频流...";
-                        await youtube.Videos.Streams.DownloadAsync(videoStreamInfo, tempVideoPath);
-
-                        this.lbl_status.Text = "正在下载音频流...";
-                        await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, tempAudioPath);
-
-                        this.lbl_status.Text = "正在合并视频和音频流...";
-                        string ffmpegPath = @"D:\Program Files\ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe";
-                        string arguments = $"-i \"{tempVideoPath}\" -i \"{tempAudioPath}\" -c:v copy -c:a aac -y \"{outputPath}\"";
-
-                        this.lbl_status.Text = "正在执行 FFmpeg 命令...";
-                        using var process = new Process
+                        this.Invoke(new Action(() =>
                         {
-                            StartInfo = new ProcessStartInfo
-                            {
-                                FileName = ffmpegPath,
-                                Arguments = arguments,
-                                RedirectStandardOutput = true,
-                                RedirectStandardError = true,
-                                UseShellExecute = false,
-                                CreateNoWindow = true,
-                            }
-                        };
+                            this.bar_download.Style = ProgressBarStyle.Marquee;
+                            this.lbl_status.Text = "正在准备下载...";
+                        }));
 
-                        this.lbl_status.Text = "正在启动 FFmpeg 进程...";
-                        process.Start();
-
-                        this.lbl_status.Text = "正在等待 FFmpeg 进程完成...";
-                        string output = await process.StandardError.ReadToEndAsync();
-
-                        this.lbl_status.Text = "视频和音频合并完成！";
-                        process.WaitForExit();
-
-                        this.lbl_status.Text = "正在删除临时视频文件...";
-                        File.Delete(tempVideoPath);
-
-                        this.lbl_status.Text = "正在清理音频临时文件...";
-                        File.Delete(tempAudioPath);
-
-                        this.bar_download.Style = ProgressBarStyle.Blocks;
+                        // 使用 yt-dlp 下载（更可靠）
+                        DownloadWithYtDlp(_url, _outputPath);
                     }
                     catch (Exception ex)
                     {
-                        AppendLog($"错误: \r\nUrl：{url}\r\nOutput：{outputPath}\r\nErrorMessage：{ex.Message}\r\nStackTrace：{ex.StackTrace}");
+                        AppendLog($"错误: \r\nUrl：{_url}\r\nOutput：{_outputPath}\r\nErrorMessage：{ex.Message}\r\nStackTrace：{ex.StackTrace}");
+                        
+                        if (this.IsHandleCreated && !this.IsDisposed)
+                        {
+                            this.Invoke(new Action(() =>
+                            {
+                                MessageBox.Show($"下载失败：{ex.Message}\n\n详细信息请查看 log.txt", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }));
+                        }
                     }
                     finally
                     {
-                        // ★★★ 下载完成后自动关闭窗口 ★★★
-                        this.Invoke(new Action(() =>
+                        if (this.IsHandleCreated && !this.IsDisposed)
                         {
-                            this.lbl_status.Text = "所有下载已完成，窗口将自动关闭。";
-                            this.Close();
-                        }));
+                            this.Invoke(new Action(() =>
+                            {
+                                this.lbl_status.Text = "下载完成，窗口将自动关闭。";
+                                this.bar_download.Style = ProgressBarStyle.Blocks;
+                                this.Close();
+                            }));
+                        }
                     }
                 });
 
@@ -109,6 +67,183 @@ namespace VideoFetchApp
                 thread.Start();
                 thread.Join();
             });
+        }
+
+        private void DownloadWithYtDlp(string url, string outputPath)
+        {
+            // 查找 yt-dlp.exe 路径
+            string ytDlpPath = FindYtDlp();
+
+            if (string.IsNullOrEmpty(ytDlpPath))
+            {
+                throw new FileNotFoundException(
+                    "未找到 yt-dlp.exe！\n\n" +
+                    "程序集成的 yt-dlp 文件可能丢失或损坏。\n" +
+                    "请确保 Assets 文件夹中包含 yt-dlp.exe 文件，\n" +
+                    "或重新下载完整的程序包。"
+                );
+            }
+
+            // 查找 FFmpeg 路径
+            string ffmpegPath = FindFfmpeg();
+            if (string.IsNullOrEmpty(ffmpegPath))
+            {
+                throw new FileNotFoundException(
+                    "未找到 ffmpeg.exe！\n\n" +
+                    "程序集成的 ffmpeg 文件可能丢失或损坏。\n" +
+                    "请确保 Assets 文件夹中包含 ffmpeg.exe 文件，\n" +
+                    "或重新下载完整的程序包。"
+                );
+            }
+
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    this.lbl_status.Text = $"使用 yt-dlp 下载: {Path.GetFileName(outputPath)}";
+                }));
+            }
+
+            // yt-dlp 命令参数 - 添加合并选项和 ffmpeg 路径
+            string arguments = $"--newline --no-warnings " +
+                              $"--ffmpeg-location \"{ffmpegPath}\" " +
+                              $"--merge-output-format mp4 " +
+                              $"--format \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best\" " +
+                              $"--output \"{outputPath}\" \"{url}\""; 
+
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = ytDlpPath,
+                    Arguments = arguments,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = System.Text.Encoding.UTF8,
+                    StandardErrorEncoding = System.Text.Encoding.UTF8
+                }
+            };
+
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    // 解析下载进度
+                    var match = Regex.Match(e.Data, @"\[download\]\s+(\d+\.?\d*)%");
+                    if (match.Success)
+                    {
+                        if (float.TryParse(match.Groups[1].Value, out float progress))
+                        {
+                            if (this.IsHandleCreated && !this.IsDisposed)
+                            {
+                                this.Invoke(new Action(() =>
+                                {
+                                    this.lbl_status.Text = $"下载进度: {progress:F1}%";
+                                    if (this.bar_download.Style == ProgressBarStyle.Marquee)
+                                    {
+                                        this.bar_download.Style = ProgressBarStyle.Blocks;
+                                    }
+                                    this.bar_download.Value = Math.Min((int)progress, 100);
+                                }));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (this.IsHandleCreated && !this.IsDisposed)
+                        {
+                            this.Invoke(new Action(() =>
+                            {
+                                this.lbl_status.Text = e.Data;
+                            }));
+                        }
+                    }
+                    AppendLog($"[yt-dlp] {e.Data}");
+                }
+            };
+
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    AppendLog($"[yt-dlp ERROR] {e.Data}");
+                }
+            };
+
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                throw new Exception($"yt-dlp 下载失败，退出代码: {process.ExitCode}");
+            }
+
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    this.lbl_status.Text = "下载完成！";
+                    this.bar_download.Value = 100;
+                }));
+            }
+        }
+
+        private string FindYtDlp()
+        {
+            // 1. 检查程序所在目录下的 Assets 文件夹（集成的 yt-dlp）
+            string assetsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "yt-dlp.exe");
+            if (File.Exists(assetsPath))
+                return assetsPath;
+
+            // 2. 检查程序所在目录（发布后会被复制到根目录）
+            string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
+            if (File.Exists(localPath))
+                return localPath;
+
+            // 3. 检查系统 PATH（备用方案）
+            string? pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (pathEnv != null)
+            {
+                foreach (string path in pathEnv.Split(';'))
+                {
+                    string ytDlpPath = Path.Combine(path.Trim(), "yt-dlp.exe");
+                    if (File.Exists(ytDlpPath))
+                        return ytDlpPath;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private string FindFfmpeg()
+        {
+            // 1. 检查程序所在目录下的 Assets 文件夹（集成的 ffmpeg）
+            string assetsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "ffmpeg.exe");
+            if (File.Exists(assetsPath))
+                return assetsPath;
+
+            // 2. 检查程序所在目录（发布后会被复制到根目录）
+            string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+            if (File.Exists(localPath))
+                return localPath;
+
+            // 3. 检查系统 PATH（备用方案）
+            string? pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (pathEnv != null)
+            {
+                foreach (string path in pathEnv.Split(';'))
+                {
+                    string ffmpegPath = Path.Combine(path.Trim(), "ffmpeg.exe");
+                    if (File.Exists(ffmpegPath))
+                        return ffmpegPath;
+                }
+            }
+
+            return string.Empty;
         }
 
         public static void AppendLog(string message)

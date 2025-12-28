@@ -14,7 +14,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="YoutubeExplode" Version="6.5.4" />
+    <!-- 将 Assets 文件夹中的 ffmpeg 相关文件复制到输出目录 -->
+    <None Include="Assets\ffmpeg.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Assets\ffprobe.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Assets\yt-dlp.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
