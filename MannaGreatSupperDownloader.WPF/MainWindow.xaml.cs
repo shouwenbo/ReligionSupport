@@ -23,6 +23,13 @@ namespace MannaGreatSupperDownloader.WPF
                 foreach (var dir in di.GetDirectories()) dir.Delete(true);
             }
             Directory.CreateDirectory(workDir);
+            
+            // 设置HTTP请求头，模拟浏览器行为以避免403错误
+            _http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36");
+            _http.DefaultRequestHeaders.Add("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
+            _http.DefaultRequestHeaders.Add("Accept-Language", "en,zh-CN;q=0.9,zh;q=0.8");
+            _http.DefaultRequestHeaders.Add("Referer", "https://manna3.zlgem.com/");
+            
             LoadSettings();
             OutputSourceFilesToTxt();
         }
@@ -62,7 +69,7 @@ namespace MannaGreatSupperDownloader.WPF
                 var requestBody = new { username, password };
                 var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-                var response = await _http.PostAsync("https://manna3.great-supper.com/prod-api/app/login", content);
+                var response = await _http.PostAsync("https://manna3.zlgem.com/prod-api/app/login", content);
                 var json = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
@@ -114,7 +121,7 @@ namespace MannaGreatSupperDownloader.WPF
             try
             {
                 _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-                var response = await _http.GetAsync($"https://manna3.great-supper.com/prod-api/app/article/{id}");
+                var response = await _http.GetAsync($"https://manna3.zlgem.com/prod-api/app/article/{id}");
                 var json = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
@@ -166,7 +173,11 @@ namespace MannaGreatSupperDownloader.WPF
                 targetFolder = Path.Combine(folder, title);
                 Directory.CreateDirectory(targetFolder);
             }
-
+            // 禁用按钮，显示下载中
+            var btn = sender as System.Windows.Controls.Button;
+            btn.IsEnabled = false;
+            string originalContent = btn.Content.ToString();
+            btn.Content = "下载中...";
             PbDownload.Value = 0;
             PbDownload.Maximum = LbArticleContent.Items.Count;
 
@@ -200,13 +211,31 @@ namespace MannaGreatSupperDownloader.WPF
 
                 try
                 {
-                    var bytes = await _http.GetByteArrayAsync(url);
+                    var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    var response = await _http.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+                    var bytes = await response.Content.ReadAsByteArrayAsync();
                     await File.WriteAllBytesAsync(Path.Combine(targetFolder, filename), bytes);
                 }
-                catch { }
+                catch (HttpRequestException httpEx)
+                {
+                    MessageBox.Show($"下载失败 {filename}: {httpEx.Message}\nURL: {url}");
+                }
+                catch (IOException ioEx)
+                {
+                    MessageBox.Show($"文件写入失败 {filename}: {ioEx.Message}");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"未知错误 {filename}: {ex.Message}");
+                }
 
                 PbDownload.Value += 1;
             }
+
+            // 恢复按钮状态
+            btn.IsEnabled = true;
+            btn.Content = originalContent;
 
             MessageBox.Show("下载完成！");
             System.Diagnostics.Process.Start("explorer.exe", targetFolder);
@@ -242,7 +271,7 @@ namespace MannaGreatSupperDownloader.WPF
 
                 while (hasMore)
                 {
-                    var response = await _http.GetAsync($"https://manna3.great-supper.com/prod-api/app/article/list?pageNum={pageNum}&pageSize={pageSize}&articleCategoryId={articleCategoryId}");
+                    var response = await _http.GetAsync($"https://manna3.zlgem.com/prod-api/app/article/list?pageNum={pageNum}&pageSize={pageSize}&articleCategoryId={articleCategoryId}");
                     var json = await response.Content.ReadAsStringAsync();
                     using var doc = JsonDocument.Parse(json);
                     var root = doc.RootElement;
@@ -319,7 +348,10 @@ namespace MannaGreatSupperDownloader.WPF
 
                 try
                 {
-                    var bytes = await _http.GetByteArrayAsync(realUrl);
+                    var request = new HttpRequestMessage(HttpMethod.Get, realUrl);
+                    var response = await _http.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+                    var bytes = await response.Content.ReadAsByteArrayAsync();
                     await File.WriteAllBytesAsync(Path.Combine(targetFolder, filename), bytes);
                 }
                 catch { }
@@ -339,7 +371,7 @@ namespace MannaGreatSupperDownloader.WPF
             try
             {
                 _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-                var response = await _http.GetAsync($"https://manna3.great-supper.com/prod-api/app/article/{id}");
+                var response = await _http.GetAsync($"https://manna3.zlgem.com/prod-api/app/article/{id}");
                 var json = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
@@ -375,6 +407,12 @@ namespace MannaGreatSupperDownloader.WPF
                 return;
             }
 
+            // 禁用按钮，显示下载中
+            var btn = sender as System.Windows.Controls.Button;
+            btn.IsEnabled = false;
+            string originalContent = btn.Content.ToString();
+            btn.Content = "批量下载中...";
+
             PbBatchArticleProgress.Value = 0;
             PbBatchArticleProgress.Maximum = LbBatchArticles.Items.Count;
 
@@ -402,6 +440,10 @@ namespace MannaGreatSupperDownloader.WPF
 
                 await Task.Delay(100); // 避免UI卡顿
             }
+
+            // 恢复按钮状态
+            btn.IsEnabled = true;
+            btn.Content = originalContent;
 
             MessageBox.Show("批量下载完成！");
         }
