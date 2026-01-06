@@ -1,4 +1,5 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.0.11205.157
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -57,6 +58,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlaylistMaker.WPF", "PlaylistMaker.WPF\PlaylistMaker.WPF.csproj", "{A5A6827D-2AFB-4F14-9225-3AE4B9935DE1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlideExtractor.WPF", "SlideExtractor.WPF\SlideExtractor.WPF.csproj", "{8E23F8F0-5C1E-4A07-9A66-680D9E7D4D4F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextOCR.WPF", "TextOCR.WPF\TextOCR.WPF.csproj", "{134FE2FE-AE4A-8380-6EB5-1B660987F092}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -414,6 +417,22 @@ Global
 		{8E23F8F0-5C1E-4A07-9A66-680D9E7D4D4F}.Release|x64.Build.0 = Release|Any CPU
 		{8E23F8F0-5C1E-4A07-9A66-680D9E7D4D4F}.Release|x86.ActiveCfg = Release|Any CPU
 		{8E23F8F0-5C1E-4A07-9A66-680D9E7D4D4F}.Release|x86.Build.0 = Release|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Debug|x64.Build.0 = Debug|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Debug|x86.Build.0 = Debug|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Release|Any CPU.Build.0 = Release|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Release|ARM64.Build.0 = Release|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Release|x64.ActiveCfg = Release|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Release|x64.Build.0 = Release|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Release|x86.ActiveCfg = Release|Any CPU
+		{134FE2FE-AE4A-8380-6EB5-1B660987F092}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
