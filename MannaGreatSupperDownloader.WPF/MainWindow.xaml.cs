@@ -11,6 +11,7 @@ namespace MannaGreatSupperDownloader.WPF
     {
         private readonly HttpClient _http = new HttpClient();
         private readonly string workDir;
+        private string _currentArticleHtml = "";
 
         public MainWindow()
         {
@@ -130,6 +131,7 @@ namespace MannaGreatSupperDownloader.WPF
                     var data = root.GetProperty("data");
                     TbArticleTitle.Text = data.GetProperty("title").GetString();
                     string contentHtml = data.GetProperty("content").GetString();
+                    _currentArticleHtml = contentHtml;
 
                     // 提取音频和图片链接
                     var matches = new List<string>();
@@ -233,6 +235,14 @@ namespace MannaGreatSupperDownloader.WPF
                 PbDownload.Value += 1;
             }
 
+            // 保存文本内容
+            string textContent = ExtractTextContent(_currentArticleHtml);
+            if (!string.IsNullOrWhiteSpace(textContent))
+            {
+                string textFilePath = Path.Combine(targetFolder, $"{title} 逐字稿.txt");
+                await File.WriteAllTextAsync(textFilePath, textContent, Encoding.UTF8);
+            }
+
             // 恢复按钮状态
             btn.IsEnabled = true;
             btn.Content = originalContent;
@@ -309,7 +319,7 @@ namespace MannaGreatSupperDownloader.WPF
 
 
         // 单篇文章下载（异步版，接收进度条）
-        private async Task DownloadArticleAsync(string title, List<string> contentList, string outputFolder, bool createFolder, System.Windows.Controls.ProgressBar contentProgressBar)
+        private async Task DownloadArticleAsync(string title, List<string> contentList, string htmlContent, string outputFolder, bool createFolder, System.Windows.Controls.ProgressBar contentProgressBar)
         {
             if (contentList.Count == 0) return;
             string targetFolder = outputFolder;
@@ -358,15 +368,24 @@ namespace MannaGreatSupperDownloader.WPF
 
                 contentProgressBar.Value += 1;
             }
+
+            // 保存文本内容
+            string textContent = ExtractTextContent(htmlContent);
+            if (!string.IsNullOrWhiteSpace(textContent))
+            {
+                string textFilePath = Path.Combine(targetFolder, $"{title} 逐字稿.txt");
+                await File.WriteAllTextAsync(textFilePath, textContent, Encoding.UTF8);
+            }
         }
 
 
 
         // 单篇文章获取（异步版）返回元组
-        private async Task<(string Title, List<string> ContentList)> FetchArticleAsync(string token, string id)
+        private async Task<(string Title, List<string> ContentList, string HtmlContent)> FetchArticleAsync(string token, string id)
         {
             string title = "";
             var contentList = new List<string>();
+            string htmlContent = "";
 
             try
             {
@@ -381,6 +400,7 @@ namespace MannaGreatSupperDownloader.WPF
                     var data = root.GetProperty("data");
                     title = data.GetProperty("title").GetString();
                     string contentHtml = data.GetProperty("content").GetString();
+                    htmlContent = contentHtml;
 
                     contentList.AddRange(Regex.Matches(contentHtml, "<audio.*?src=\"(.*?)\"").Cast<Match>().Select(m => m.Groups[1].Value));
                     contentList.AddRange(Regex.Matches(contentHtml, "<img.*?src=\"(.*?)\"").Cast<Match>().Select(m => m.Groups[1].Value));
@@ -388,7 +408,7 @@ namespace MannaGreatSupperDownloader.WPF
             }
             catch { }
 
-            return (title, contentList);
+            return (title, contentList, htmlContent);
         }
 
 
@@ -429,11 +449,11 @@ namespace MannaGreatSupperDownloader.WPF
                 string title = s.Substring(idx + 3);
 
                 // 获取文章内容
-                var (fetchedTitle, contentList) = await FetchArticleAsync(TbToken.Text.Trim(), id);
+                var (fetchedTitle, contentList, htmlContent) = await FetchArticleAsync(TbToken.Text.Trim(), id);
                 string finalTitle = string.IsNullOrEmpty(fetchedTitle) ? title : fetchedTitle;
 
                 // 下载文章
-                await DownloadArticleAsync(finalTitle, contentList, folder, createFolder, PbBatchContentProgress);
+                await DownloadArticleAsync(finalTitle, contentList, htmlContent, folder, createFolder, PbBatchContentProgress);
 
                 PbBatchArticleProgress.Value += 1; // 更新整体进度
                 PbBatchContentProgress.Value = 0;   // 重置当前文章进度
@@ -450,6 +470,31 @@ namespace MannaGreatSupperDownloader.WPF
 
 
 
+
+        // 提取HTML中的纯文本内容（排除audio和img标签）
+        private string ExtractTextContent(string htmlContent)
+        {
+            if (string.IsNullOrWhiteSpace(htmlContent)) return "";
+
+            // 移除audio和img标签
+            string text = Regex.Replace(htmlContent, @"<audio[^>]*>.*?</audio>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            text = Regex.Replace(text, @"<img[^>]*>", "", RegexOptions.IgnoreCase);
+
+            // 将<p>、<br>等标签转换为换行符
+            text = Regex.Replace(text, @"<br\s*/?>|</p>|</div>", "\n", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"<p[^>]*>", "\n", RegexOptions.IgnoreCase);
+
+            // 移除所有剩余的HTML标签
+            text = Regex.Replace(text, @"<[^>]+>", "");
+
+            // 解码HTML实体
+            text = System.Net.WebUtility.HtmlDecode(text);
+
+            // 清理多余的空行
+            text = Regex.Replace(text, @"\n\s*\n\s*\n+", "\n\n");
+
+            return text.Trim();
+        }
 
         #region 输出源码到txt
         private void OutputSourceFilesToTxt()
