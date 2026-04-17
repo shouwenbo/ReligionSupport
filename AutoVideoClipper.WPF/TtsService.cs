@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Windows;
 
 namespace AutoVideoClipper.WPF
 {
@@ -41,7 +42,7 @@ namespace AutoVideoClipper.WPF
             {
                 _log("🌐 访问首页获取 token + cookie...");
                 var html = await _client.GetStringAsync(_baseUrl);
-                var match = Regex.Match(html, @"const\s+token\s*=\s*'([a-z0-9]+)';", RegexOptions.IgnoreCase);
+                var match = Regex.Match(html, @"const\s+token\s*=\s*'([^']+)'", RegexOptions.IgnoreCase);
 
                 if (match.Success)
                 {
