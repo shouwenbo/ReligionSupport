@@ -66,8 +66,7 @@ public class AppSettings
                 DefaultMaxTokens = 4096,
                 DefaultTemperature = 0.7,
                 IsActive = 1,
-                CreatedAt = now,
-                UpdatedAt = now
+                CreatedAt = now, UpdatedAt = now
             }).ExecuteCommand());
         }
 
