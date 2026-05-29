@@ -9,7 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-    <AssemblyName>WeChatPublisher</AssemblyName>
+    <AssemblyName>公众号视频号发布工具</AssemblyName>
     <RootNamespace>WeChatPublisher</RootNamespace>
     <NoWarn>CS7022;CA1416</NoWarn>
     <DefaultItemExcludes>$(DefaultItemExcludes);Tools\**\*</DefaultItemExcludes>
