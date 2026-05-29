@@ -126,7 +126,7 @@ public partial class ArticleGeneratorWindow : Window
 
             var aiService = new AIService(_sensitiveService);
             var promptBuilder = new PromptBuilderService();
-            var agentLoop = new AgentLoop(aiService, _sensitiveService, promptBuilder, AppSettings.Instance);
+            var agentLoop = new AgentLoop(aiService, _sensitiveService, promptBuilder, AppSettings.Instance, _mcpService);
 
             agentLoop.OnLog += (level, msg) =>
             {

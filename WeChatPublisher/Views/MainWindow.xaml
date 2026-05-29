@@ -9,6 +9,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -42,7 +44,32 @@
             </WrapPanel>
         </GroupBox>
 
-        <GroupBox Grid.Row="3" Header="最近任务" Padding="8">
+        <GroupBox Grid.Row="3" Header="系统健康状态" Padding="6" Margin="0,0,0,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Ellipse x:Name="ElAiHealth" Width="12" Height="12" Fill="Gray" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="TbAiHealth" Text="AI" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Ellipse x:Name="ElTtsHealth" Width="12" Height="12" Fill="Gray" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="TbTtsHealth" Text="TTS" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Ellipse x:Name="ElWechatHealth" Width="12" Height="12" Fill="Gray" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="TbWechatHealth" Text="公众号" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                    <Ellipse x:Name="ElMcpHealth" Width="12" Height="12" Fill="Gray" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="TbMcpHealth" Text="MCP资源" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+
+        <GroupBox Grid.Row="4" Header="最近任务" Padding="8">
             <DataGrid x:Name="DgTasks" AutoGenerateColumns="False" IsReadOnly="True"
                       SelectionMode="Single" MouseDoubleClick="DgTasks_MouseDoubleClick">
                 <DataGrid.Columns>
@@ -55,7 +82,7 @@
             </DataGrid>
         </GroupBox>
 
-        <StatusBar Grid.Row="4" Margin="0,8,0,0">
+        <StatusBar Grid.Row="5" Margin="0,8,0,0">
             <StatusBarItem>
                 <TextBlock x:Name="TbStatus" Text="就绪"/>
             </StatusBarItem>

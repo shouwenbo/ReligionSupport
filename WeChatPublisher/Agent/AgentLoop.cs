@@ -13,14 +13,14 @@ public class AgentLoop
     public event Action<string, string>? OnLog;
 
     public AgentLoop(AIService aiService, SensitiveWordService sensitiveService,
-        PromptBuilderService promptBuilder, AppSettings settings)
+        PromptBuilderService promptBuilder, AppSettings settings, McpService? mcpService = null)
     {
         _settings = settings;
 
         _steps =
         [
-            new AnalyzeSourceStep(aiService, promptBuilder),
-            new PlanStructureStep(aiService, promptBuilder),
+            new AnalyzeSourceStep(aiService, promptBuilder, mcpService),
+            new PlanStructureStep(aiService),
             new GenerateTextStep(aiService, promptBuilder),
             new GenerateImageStep(),
             new SensitiveCheckStep(sensitiveService),

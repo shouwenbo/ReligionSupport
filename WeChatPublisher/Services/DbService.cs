@@ -44,6 +44,8 @@ public class DbService
             typeof(TtsApiConfig),
             typeof(WeChatConfig),
             typeof(McpResourceConfig),
+            typeof(McpCacheEntry),
+            typeof(PromptTemplate),
             typeof(ArticleDraft),
             typeof(VideoDraft),
             typeof(PublishRecord),

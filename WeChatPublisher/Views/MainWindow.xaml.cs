@@ -35,18 +35,55 @@ public partial class MainWindow : Window
 
     public void RefreshStatus()
     {
-        var aiConfig = AppSettings.Instance.GetActiveTextAiConfig();
-        var wechatConfig = AppSettings.Instance.GetActiveWeChatConfig();
-        if (aiConfig == null || wechatConfig == null)
-        {
-            TbConfigStatus.Text = "请先配置 AI 和公众号";
-            TbConfigStatus.Foreground = new SolidColorBrush(Colors.OrangeRed);
-        }
-        else
-        {
-            TbConfigStatus.Text = $"AI: {aiConfig.ProviderName} | 已就绪";
-            TbConfigStatus.Foreground = new SolidColorBrush(Colors.Green);
-        }
+        var ai = AppSettings.Instance.GetActiveTextAiConfig();
+        var img = AppSettings.Instance.GetActiveImageAiConfig();
+        var tts = AppSettings.Instance.GetActiveTtsConfig();
+        var sub = AppSettings.Instance.GetActiveSubtitleConfig();
+        var wechat = AppSettings.Instance.GetActiveWeChatConfig();
+        var mcp = AppSettings.Instance.GetMcpResources();
+
+        SetHealth(ElAiHealth, TbAiHealth, "AI",
+            ai?.IsHealthy == 1 && img?.IsHealthy == 1,
+            ai != null ? $"{ai.ProviderName}" : null);
+
+        SetHealth(ElTtsHealth, TbTtsHealth, "TTS",
+            tts?.IsHealthy == 1 && sub?.IsHealthy == 1,
+            tts != null ? $"{tts.ApiType}" : null);
+
+        SetHealth(ElWechatHealth, TbWechatHealth, "公众号",
+            wechat?.IsHealthy == 1,
+            wechat != null ? wechat.AccountName : null);
+
+        var mcpHealthy = mcp.Count > 0 && mcp.All(r => r.IsHealthy == 1 || r.IsHealthy == 0);
+        var mcpChecked = mcp.Any(r => r.IsHealthy == 1);
+        SetHealth(ElMcpHealth, TbMcpHealth, "MCP",
+            mcpChecked && mcpHealthy,
+            $"{mcp.Count}个资源");
+
+        TbConfigStatus.Text = $"{CountHealthy()}/4 健康";
+    }
+
+    private static void SetHealth(System.Windows.Shapes.Ellipse el, System.Windows.Controls.TextBlock tb,
+        string name, bool isHealthy, string? detail)
+    {
+        el.Fill = isHealthy
+            ? new SolidColorBrush(Colors.LimeGreen)
+            : new SolidColorBrush(Colors.Gray);
+        tb.Text = detail != null ? $"{name}: {detail}" : name;
+    }
+
+    private int CountHealthy()
+    {
+        int count = 0;
+        var ai = AppSettings.Instance.GetActiveTextAiConfig();
+        var img = AppSettings.Instance.GetActiveImageAiConfig();
+        if (ai?.IsHealthy == 1 && img?.IsHealthy == 1) count++;
+        var tts = AppSettings.Instance.GetActiveTtsConfig();
+        var sub = AppSettings.Instance.GetActiveSubtitleConfig();
+        if (tts?.IsHealthy == 1 && sub?.IsHealthy == 1) count++;
+        if (AppSettings.Instance.GetActiveWeChatConfig()?.IsHealthy == 1) count++;
+        if (AppSettings.Instance.GetMcpResources().Any(r => r.IsHealthy == 1)) count++;
+        return count;
     }
 
     private void BtnArticle_Click(object sender, RoutedEventArgs e)

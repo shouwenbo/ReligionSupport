@@ -1,3 +1,4 @@
+using System.Text.Json;
 using WeChatPublisher.Models;
 
 namespace WeChatPublisher.Services;
@@ -6,77 +7,299 @@ public class McpService
 {
     private readonly AppSettings _settings;
 
-    public McpService()
+    public McpService() { _settings = AppSettings.Instance; }
+
+    public List<McpResourceConfig> GetAllResources() => _settings.GetMcpResources();
+    public void SaveResource(McpResourceConfig config) => _settings.SaveMcpResource(config);
+    public void DeleteResource(int id) => _settings.DeleteMcpResource(id);
+
+    // ========== 智能采样（带缓存） ==========
+    public List<FileSample> SampleFiles(int resourceId, int maxFiles = 20, int sampleChars = 500)
     {
-        _settings = AppSettings.Instance;
+        var resource = GetAllResources().FirstOrDefault(r => r.Id == resourceId);
+        if (resource == null) return [];
+
+        return resource.ResourceType switch
+        {
+            "LocalFolder" or "NetworkShare" => SampleLocalFiles(resource, maxFiles, sampleChars),
+            "WebUrl" => SampleWebUrl(resource, sampleChars),
+            "RssFeed" => SampleRssFeed(resource, maxFiles, sampleChars),
+            _ => []
+        };
     }
 
-    public List<McpResourceConfig> GetAllResources()
-        => _settings.GetMcpResources();
-
-    public void SaveResource(McpResourceConfig config)
-        => _settings.SaveMcpResource(config);
-
-    public void DeleteResource(int id)
-        => _settings.DeleteMcpResource(id);
-
-    public List<string> ListFiles(int resourceId)
+    // ========== 本地文件采样 + 缓存 ==========
+    private List<FileSample> SampleLocalFiles(McpResourceConfig resource, int maxFiles, int sampleChars)
     {
-        var resources = _settings.GetMcpResources();
-        var resource = resources.FirstOrDefault(r => r.Id == resourceId)
-            ?? throw new InvalidOperationException("资源不存在");
-
-        if (!Directory.Exists(resource.Path))
-            return [];
+        if (!Directory.Exists(resource.Path)) return [];
 
         var filter = string.IsNullOrWhiteSpace(resource.FileFilter) ? "*.*" : resource.FileFilter;
         var patterns = filter.Split(';', StringSplitOptions.RemoveEmptyEntries);
-        var files = new List<string>();
+        var allFiles = new List<string>();
+        foreach (var p in patterns)
+            allFiles.AddRange(Directory.GetFiles(resource.Path, p.Trim(), SearchOption.AllDirectories));
 
-        foreach (var pattern in patterns)
-        {
-            files.AddRange(Directory.GetFiles(resource.Path, pattern.Trim(),
-                SearchOption.AllDirectories));
-        }
-
-        return files.Distinct().OrderBy(f => f).ToList();
-    }
-
-    public List<ParsedDocx> ReadDocxFiles(int resourceId, int? maxCount = null)
-    {
-        var files = ListFiles(resourceId).Where(f => f.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)).ToList();
-        if (maxCount.HasValue && files.Count > maxCount.Value)
-            files = files.Take(maxCount.Value).ToList();
-
-        var results = new List<ParsedDocx>();
-        foreach (var file in files)
-        {
-            try
-            {
-                var parsed = DocxTemplateService.ParseArticleDocx(file);
-                if (parsed != null) results.Add(parsed);
-            }
-            catch { }
-        }
-        return results;
-    }
-
-    public string ReadTextFile(string filePath)
-        => File.ReadAllText(filePath);
-
-    public List<string> PickRandomImages(int resourceId, int count)
-    {
-        var files = ListFiles(resourceId)
+        var supported = allFiles
             .Where(f =>
             {
                 var ext = Path.GetExtension(f).ToLowerInvariant();
-                return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".gif";
+                return ext is ".docx" or ".txt" or ".md" or ".pdf" or ".html" or ".htm";
+            })
+            .Take(maxFiles)
+            .ToList();
+
+        // 读取缓存
+        var cached = _settings.Db.ExecuteInScope(db =>
+            db.Queryable<McpCacheEntry>()
+              .Where(c => c.ResourceId == resource.Id)
+              .ToList());
+
+        var cacheDict = cached.ToDictionary(c => c.FilePath, c => c);
+        var samples = new List<FileSample>();
+        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        var newCache = new List<McpCacheEntry>();
+
+        foreach (var file in supported)
+        {
+            var fileInfo = new FileInfo(file);
+            var lastMod = fileInfo.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss");
+            var size = fileInfo.Length;
+
+            // 缓存命中：文件未变化
+            if (cacheDict.TryGetValue(file, out var entry)
+                && entry.FileSize == size
+                && entry.LastModified == lastMod
+                && entry.ContentSample != null)
+            {
+                samples.Add(new FileSample
+                {
+                    FilePath = file,
+                    FileName = Path.GetFileName(file),
+                    Content = entry.ContentSample,
+                    FullContent = entry.AiSummary ?? entry.ContentSample,
+                    IsCached = true
+                });
+                continue;
+            }
+
+            // 缓存未命中：读取文件
+            var content = ReadFileContent(file);
+            if (string.IsNullOrWhiteSpace(content)) continue;
+
+            var sample = content.Length > sampleChars ? content[..sampleChars] + "..." : content;
+            samples.Add(new FileSample
+            {
+                FilePath = file,
+                FileName = Path.GetFileName(file),
+                Content = sample,
+                FullContent = content,
+                IsCached = false
+            });
+
+            newCache.Add(new McpCacheEntry
+            {
+                ResourceId = resource.Id,
+                FilePath = file,
+                FileName = Path.GetFileName(file),
+                FileSize = size,
+                LastModified = lastMod,
+                ContentSample = sample,
+                CachedAt = now
+            });
+        }
+
+        // 更新缓存
+        if (newCache.Count > 0)
+        {
+            _settings.Db.ExecuteInScope(db =>
+            {
+                foreach (var entry in newCache)
+                {
+                    var existing = db.Queryable<McpCacheEntry>()
+                        .First(c => c.ResourceId == entry.ResourceId && c.FilePath == entry.FilePath);
+                    if (existing != null)
+                    {
+                        existing.ContentSample = entry.ContentSample;
+                        existing.FileSize = entry.FileSize;
+                        existing.LastModified = entry.LastModified;
+                        existing.CachedAt = now;
+                        db.Updateable(existing).ExecuteCommand();
+                    }
+                    else
+                    {
+                        db.Insertable(entry).ExecuteCommand();
+                    }
+                }
+            });
+
+            // 更新资源缓存状态
+            resource.LastCachedAt = now;
+            resource.CachedFileCount = _settings.Db.ExecuteInScope(db =>
+                db.Queryable<McpCacheEntry>().Count(c => c.ResourceId == resource.Id));
+            _settings.SaveMcpResource(resource);
+        }
+
+        return samples;
+    }
+
+    // ========== 网页采样 ==========
+    private static List<FileSample> SampleWebUrl(McpResourceConfig resource, int sampleChars)
+    {
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            var html = http.GetStringAsync(resource.Path).Result;
+            var text = StripHtml(html);
+            if (string.IsNullOrWhiteSpace(text)) return [];
+            return [new FileSample
+            {
+                FilePath = resource.Path,
+                FileName = resource.Name,
+                Content = text.Length > sampleChars ? text[..sampleChars] + "..." : text,
+                FullContent = text,
+                IsCached = false
+            }];
+        }
+        catch { return []; }
+    }
+
+    // ========== RSS采样 ==========
+    private static List<FileSample> SampleRssFeed(McpResourceConfig resource, int maxFiles, int sampleChars)
+    {
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            var xml = http.GetStringAsync(resource.Path).Result;
+            var items = ParseRssItems(xml).Take(maxFiles).ToList();
+
+            return items.Select(item => new FileSample
+            {
+                FilePath = item.Link ?? resource.Path,
+                FileName = item.Title ?? "RSS Item",
+                Content = (item.Title + "\n" + (item.Description ?? "")).Length > sampleChars
+                    ? (item.Title + "\n" + (item.Description ?? ""))[..sampleChars] + "..." : item.Title + "\n" + (item.Description ?? ""),
+                FullContent = item.Title + "\n" + (item.Description ?? ""),
+                IsCached = false
+            }).ToList();
+        }
+        catch { return []; }
+    }
+
+    // ========== 工具方法 ==========
+    private static string? ReadFileContent(string filePath)
+    {
+        try
+        {
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            if (ext == ".docx")
+            {
+                using var doc = Xceed.Words.NET.DocX.Load(filePath);
+                return string.Join("\n", doc.Paragraphs.Select(p => p.Text).Where(t => !string.IsNullOrWhiteSpace(t)));
+            }
+            if (ext is ".txt" or ".md" or ".html" or ".htm")
+                return File.ReadAllText(filePath);
+            return null;
+        }
+        catch { return null; }
+    }
+
+    private static string StripHtml(string html)
+    {
+        var text = System.Text.RegularExpressions.Regex.Replace(html, "<[^>]+>", " ");
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+        return text;
+    }
+
+    private static List<(string? Title, string? Description, string? Link)> ParseRssItems(string xml)
+    {
+        var items = new List<(string?, string?, string?)>();
+        try
+        {
+            var doc = System.Xml.Linq.XDocument.Parse(xml);
+            foreach (var item in doc.Descendants("item"))
+            {
+                items.Add((
+                    item.Element("title")?.Value,
+                    item.Element("description")?.Value,
+                    item.Element("link")?.Value
+                ));
+            }
+        }
+        catch { }
+        return items;
+    }
+
+    public string ReadTextFile(string filePath) => File.ReadAllText(filePath);
+
+    public List<string> PickRandomImages(int resourceId, int count)
+    {
+        var resource = GetAllResources().FirstOrDefault(r => r.Id == resourceId);
+        if (resource == null || !Directory.Exists(resource.Path)) return [];
+
+        var files = Directory.GetFiles(resource.Path, "*.*", SearchOption.AllDirectories)
+            .Where(f =>
+            {
+                var ext = Path.GetExtension(f).ToLowerInvariant();
+                return ext is ".jpg" or ".jpeg" or ".png" or ".bmp" or ".gif";
             })
             .ToList();
 
         var rng = new Random();
         return files.OrderBy(_ => rng.Next()).Take(Math.Min(count, files.Count)).ToList();
     }
+
+    // ========== 健康检查 ==========
+    public bool CheckHealth(McpResourceConfig resource)
+    {
+        try
+        {
+            return resource.ResourceType switch
+            {
+                "LocalFolder" or "NetworkShare" => Directory.Exists(resource.Path),
+                "WebUrl" or "RssFeed" =>
+                    Uri.TryCreate(resource.Path, UriKind.Absolute, out var uri)
+                    && (uri.Scheme == "http" || uri.Scheme == "https"),
+                _ => false
+            };
+        }
+        catch { return false; }
+    }
+
+    public void UpdateHealth(int resourceId)
+    {
+        var resource = GetAllResources().FirstOrDefault(r => r.Id == resourceId);
+        if (resource == null) return;
+
+        resource.IsHealthy = CheckHealth(resource) ? 1 : 0;
+        resource.HealthMessage = resource.IsHealthy == 1 ? "可访问" : "不可访问";
+        resource.LastHealthCheck = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        _settings.SaveMcpResource(resource);
+    }
+
+    public List<ParsedDocx> ReadDocxFiles(int resourceId, int? maxCount = null)
+    {
+        var resource = GetAllResources().FirstOrDefault(r => r.Id == resourceId);
+        if (resource == null || !Directory.Exists(resource.Path)) return [];
+
+        var files = Directory.GetFiles(resource.Path, "*.docx", SearchOption.AllDirectories).ToList();
+        if (maxCount.HasValue && files.Count > maxCount.Value)
+            files = files.Take(maxCount.Value).ToList();
+
+        return files.Select(f =>
+        {
+            try { return DocxTemplateService.ParseArticleDocx(f); }
+            catch { return null; }
+        }).Where(r => r != null).ToList()!;
+    }
+}
+
+public class FileSample
+{
+    public string FilePath { get; set; } = "";
+    public string FileName { get; set; } = "";
+    public string Content { get; set; } = "";
+    public string FullContent { get; set; } = "";
+    public bool IsCached { get; set; }
 }
 
 public class ParsedDocx
@@ -116,23 +339,16 @@ public class DocxTemplateService
 
             var match = System.Text.RegularExpressions.Regex.Match(text,
                 @"^标题：(.*)\n简介：(.*)\n(.*)\n([\s\S]*?)\n#(.+)$");
-
             if (!match.Success) return null;
 
             return new ParsedDocx
             {
-                FilePath = filePath,
-                FileName = Path.GetFileName(filePath),
-                Title = match.Groups[1].Value,
-                Description = match.Groups[2].Value,
-                Verse = match.Groups[3].Value,
-                Content = match.Groups[4].Value,
+                FilePath = filePath, FileName = Path.GetFileName(filePath),
+                Title = match.Groups[1].Value, Description = match.Groups[2].Value,
+                Verse = match.Groups[3].Value, Content = match.Groups[4].Value,
                 Tags = match.Groups[5].Value
             };
         }
-        catch
-        {
-            return null;
-        }
+        catch { return null; }
     }
 }

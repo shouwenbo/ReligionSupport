@@ -1,8 +1,14 @@
+using SqlSugar;
+
 namespace WeChatPublisher.Models;
 
+[SugarTable("WeChatConfigs")]
 public class WeChatConfig
 {
+    [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
     public int Id { get; set; }
+    public string AccountName { get; set; } = "";
+    public string Platform { get; set; } = "OfficialAccount";
     public string AppId { get; set; } = "";
     public string? AppSecretEncrypted { get; set; }
     public string ApiBaseUrl { get; set; } = "https://api.weixin.qq.com";
@@ -10,6 +16,17 @@ public class WeChatConfig
     public int AutoSanitize { get; set; } = 1;
     public string? DefaultTags { get; set; }
     public int IsActive { get; set; }
+    public int SortOrder { get; set; }
+    public int IsHealthy { get; set; }
+    public string? LastHealthCheck { get; set; }
+    public string? HealthMessage { get; set; }
     public string CreatedAt { get; set; } = "";
     public string UpdatedAt { get; set; } = "";
+
+    [SugarColumn(IsIgnore = true)]
+    public string HealthDisplay => IsHealthy == 1 ? "● 正常" : "○ 未测";
+    [SugarColumn(IsIgnore = true)]
+    public string ActiveDisplay => IsActive == 1 ? "★ 当前" : "";
+    [SugarColumn(IsIgnore = true)]
+    public string PlatformDisplay => Platform == "OfficialAccount" ? "公众号" : "视频号";
 }

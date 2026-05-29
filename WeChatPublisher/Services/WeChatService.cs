@@ -16,12 +16,12 @@ public class WeChatService
         _settings = AppSettings.Instance;
     }
 
-    public async Task<string> GetAccessTokenAsync(bool forceRefresh = false)
+    public async Task<string> GetAccessTokenAsync(Models.WeChatConfig? account = null, bool forceRefresh = false)
     {
         if (!forceRefresh && _accessToken != null && DateTime.Now < _tokenExpiry)
             return _accessToken;
 
-        var config = _settings.GetActiveWeChatConfig();
+        var config = account ?? _settings.GetActiveWeChatConfig();
         if (config == null) throw new InvalidOperationException("未配置微信公众号");
 
         var appSecret = ConfigEncryptionService.Decrypt(config.AppSecretEncrypted!);

@@ -44,6 +44,7 @@ public class AppSettings
         SeedMcpResources();
         SeedSensitiveWords();
         SeedWeChatConfig();
+        SeedPromptTemplates();
     }
 
     // ========== AI 配置 ==========
@@ -353,12 +354,18 @@ public class AppSettings
         });
     }
 
-    // --- WeChat Config ---
-    public WeChatConfig? GetActiveWeChatConfig()
+    // --- WeChat Config (多账号) ---
+    public WeChatConfig? GetActiveWeChatConfig(string platform = "OfficialAccount")
     {
         return Db.ExecuteInScope(db =>
             db.Queryable<WeChatConfig>()
-                .First(x => x.IsActive == 1));
+                .First(x => x.IsActive == 1 && x.Platform == platform));
+    }
+
+    public List<WeChatConfig> GetAllWeChatConfigs()
+    {
+        return Db.ExecuteInScope(db =>
+            db.Queryable<WeChatConfig>().OrderBy(c => c.SortOrder, SqlSugar.OrderByType.Asc).ToList());
     }
 
     public void SaveWeChatConfig(WeChatConfig config)
@@ -375,6 +382,30 @@ public class AppSettings
             {
                 db.Updateable(config).ExecuteCommand();
             }
+        });
+    }
+
+    public void DeleteWeChatConfig(int id)
+    {
+        Db.ExecuteInScope(db => db.Deleteable<WeChatConfig>().In(id).ExecuteCommand());
+    }
+
+    public void SetActiveWeChatAccount(int id)
+    {
+        Db.ExecuteInScope(db =>
+        {
+            var config = db.Queryable<WeChatConfig>().InSingle(id);
+            if (config == null) return;
+
+            // Deactivate all accounts of same platform
+            db.Updateable<WeChatConfig>()
+                .SetColumns(c => c.IsActive == 0)
+                .Where(c => c.Platform == config.Platform)
+                .ExecuteCommand();
+
+            // Activate selected
+            config.IsActive = 1;
+            db.Updateable(config).ExecuteCommand();
         });
     }
 
@@ -404,6 +435,116 @@ public class AppSettings
     public void DeleteMcpResource(int id)
     {
         Db.ExecuteInScope(db => db.Deleteable<McpResourceConfig>().In(id).ExecuteCommand());
+    }
+
+    // --- Prompt Templates ---
+    public List<PromptTemplate> GetPromptTemplates(string? category = null)
+    {
+        return Db.ExecuteInScope(db =>
+        {
+            var q = db.Queryable<PromptTemplate>();
+            if (category != null) q = q.Where(p => p.Category == category);
+            return q.OrderBy(p => p.SortOrder, SqlSugar.OrderByType.Asc).ToList();
+        });
+    }
+
+    public PromptTemplate? GetActivePromptTemplate(string category)
+    {
+        return Db.ExecuteInScope(db =>
+            db.Queryable<PromptTemplate>().First(p => p.Category == category && p.IsActive == 1));
+    }
+
+    public void SavePromptTemplate(PromptTemplate template)
+    {
+        template.UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        Db.ExecuteInScope(db =>
+        {
+            if (template.Id == 0)
+            {
+                template.CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                db.Insertable(template).ExecuteCommand();
+            }
+            else
+            {
+                db.Updateable(template).ExecuteCommand();
+            }
+        });
+    }
+
+    public void DeletePromptTemplate(int id)
+    {
+        Db.ExecuteInScope(db => db.Deleteable<PromptTemplate>().In(id).ExecuteCommand());
+    }
+
+    public void SetActivePromptTemplate(int id)
+    {
+        Db.ExecuteInScope(db =>
+        {
+            var t = db.Queryable<PromptTemplate>().InSingle(id);
+            if (t == null) return;
+            db.Updateable<PromptTemplate>()
+                .SetColumns(p => p.IsActive == 0)
+                .Where(p => p.Category == t.Category)
+                .ExecuteCommand();
+            t.IsActive = 1;
+            db.Updateable(t).ExecuteCommand();
+        });
+    }
+
+    private void SeedPromptTemplates()
+    {
+        var existing = _dbService!.ExecuteInScope(db => db.Queryable<PromptTemplate>().ToList());
+        if (existing.Count > 0) return;
+
+        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+        var articlePrompt = new PromptTemplate
+        {
+            Name = "公众号文章-标准版",
+            Category = "Article",
+            SystemPrompt = "你是一位公众号文案创作者，擅长用温暖、柔和、真诚的文字打动人心。本公众号主题为'爱与祝福同行'。",
+            UserPromptTemplate = @"【规则与要求】
+1. 必须按以下格式输出：标题、简介（1-2句话）、经文（放在最前，经文要与正文呼应）、正文内容、5个两字标签
+2. 正文不使用粗体小标题，段落之间自然过渡，用内容本身的逻辑衔接
+3. 深度学习原文，理解核心思想，重新拟定文章顺序和结构，保留核心思想
+4. 避免批判性语气
+5. 内容如果深奥，适当用有趣的表达和例子辅佐，层层递进吸引读者读完
+6. 篇幅太短可根据内容适当扩展和补充
+7. 非中文语言翻译为简体中文
+
+【原文】
+{source_title}
+{source_verse}
+{source_content}",
+            Description = "公众号文章生成标准模板",
+            SortOrder = 1,
+            CreatedAt = now, UpdatedAt = now
+        };
+        _dbService.ExecuteInScope(db => db.Insertable(articlePrompt).ExecuteCommand());
+
+        var videoPrompt = new PromptTemplate
+        {
+            Name = "视频号-天父书信",
+            Category = "Video",
+            SystemPrompt = "你是一位短视频文案创作者，擅长以天父的视角撰写温暖的书信。",
+            UserPromptTemplate = @"请用以下【原文】编写天父书信：
+1. 开头必须是""亲爱的孩子""
+2. 以天父/父亲为第一人称视角改写
+3. 一行一行输出，每行以句号结尾
+4. 控制在50-250字
+5. 简体中文输出
+6. 深度理解原文，层层递进的情绪，引起共鸣
+7. 写完后提供5组爆款标题和简介，标题格式为【6字+空格+6字】或【7字+空格+7字】或【8字+空格+8字】
+8. 提供30个与书信内容高度匹配的经文，格式如【太1:1（大致内容）】，避免过于常见经文
+9. 最后生成10个两字标签，以 #xx #xx #xx 格式输出
+
+【原文】
+{source_content}",
+            Description = "视频号天父书信生成模板",
+            SortOrder = 2,
+            CreatedAt = now, UpdatedAt = now
+        };
+        _dbService.ExecuteInScope(db => db.Insertable(videoPrompt).ExecuteCommand());
     }
 
     // --- Key-Value settings ---

@@ -48,8 +48,10 @@
 
                 <Label Grid.Row="1" Grid.Column="0" Content="类型:"/>
                 <ComboBox Grid.Row="1" Grid.Column="1" x:Name="CmbResType" Margin="0,2">
-                    <ComboBoxItem Content="本地文件夹" Tag="LocalFolder"/>
-                    <ComboBoxItem Content="网络共享" Tag="NetworkShare"/>
+                    <ComboBoxItem Content="📁 本地文件夹" Tag="LocalFolder"/>
+                    <ComboBoxItem Content="🖥 网络共享" Tag="NetworkShare"/>
+                    <ComboBoxItem Content="🌐 网页URL" Tag="WebUrl"/>
+                    <ComboBoxItem Content="📡 RSS订阅" Tag="RssFeed"/>
                 </ComboBox>
 
                 <Label Grid.Row="2" Grid.Column="0" Content="路径:"/>
