@@ -48,7 +48,7 @@ public class AppSettings
     }
 
     // ========== AI 配置 ==========
-    private void SeedAiConfigs((string? DeepSeekKey, string? HunyuanKey) secrets)
+    private void SeedAiConfigs((string? DeepSeekKey, string? HunyuanKey, string? TokenHubKey) secrets)
     {
         var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         var existing = _dbService!.ExecuteInScope(db => db.Queryable<AiConfig>().ToList());
@@ -73,6 +73,7 @@ public class AppSettings
 
         if (!existing.Any(c => c.ProviderType == "ImageGeneration"))
         {
+            // 主: 混元
             _dbService.ExecuteInScope(db => db.Insertable(new AiConfig
             {
                 ProviderType = "ImageGeneration",
@@ -81,12 +82,24 @@ public class AppSettings
                 ApiKeyEncrypted = secrets.HunyuanKey != null
                     ? ConfigEncryptionService.Encrypt(secrets.HunyuanKey) : null,
                 ModelName = "hunyuan-image-3.0-instruct",
-                DefaultMaxTokens = 0,
-                DefaultTemperature = 0,
                 IsActive = 1,
-                CreatedAt = now,
-                UpdatedAt = now
+                CreatedAt = now, UpdatedAt = now
             }).ExecuteCommand());
+
+            // 备选: TokenHub
+            if (secrets.TokenHubKey != null)
+            {
+                _dbService.ExecuteInScope(db => db.Insertable(new AiConfig
+                {
+                    ProviderType = "ImageGeneration",
+                    ProviderName = "TokenHub",
+                    BaseUrl = "https://tokenhub.tencentmaas.com/v1",
+                    ApiKeyEncrypted = ConfigEncryptionService.Encrypt(secrets.TokenHubKey),
+                    ModelName = "hy3-preview",
+                    IsActive = 0,
+                    CreatedAt = now, UpdatedAt = now
+                }).ExecuteCommand());
+            }
         }
     }
 
@@ -238,23 +251,24 @@ public class AppSettings
     }
 
     // ========== 读取本地密钥 ==========
-    private static (string? DeepSeekKey, string? HunyuanKey) LoadSecrets()
+    private static (string? DeepSeekKey, string? HunyuanKey, string? TokenHubKey) LoadSecrets()
     {
         try
         {
             var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "secrets.json");
-            if (!File.Exists(path)) return (null, null);
+            if (!File.Exists(path)) return (null, null, null);
 
             var json = File.ReadAllText(path);
             using var doc = System.Text.Json.JsonDocument.Parse(json);
             var root = doc.RootElement;
             var deepseek = root.TryGetProperty("DeepSeekApiKey", out var dk) ? dk.GetString() : null;
             var hunyuan = root.TryGetProperty("HunyuanImageApiKey", out var hk) ? hk.GetString() : null;
-            return (deepseek, hunyuan);
+            var tokenhub = root.TryGetProperty("TokenHubApiKey", out var tk) ? tk.GetString() : null;
+            return (deepseek, hunyuan, tokenhub);
         }
         catch
         {
-            return (null, null);
+            return (null, null, null);
         }
     }
 

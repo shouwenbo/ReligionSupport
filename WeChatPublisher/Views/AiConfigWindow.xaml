@@ -72,9 +72,9 @@
                     <Label Grid.Row="0" Grid.Column="0" Content="提供商:"/>
                     <ComboBox Grid.Row="0" Grid.Column="1" x:Name="CmbImageProvider" Margin="0,2"
                               SelectionChanged="CmbImageProvider_SelectionChanged">
-                        <ComboBoxItem Content="混元 HunyuanImage 3.0-Instruct" Tag="HunyuanImage"/>
+                        <ComboBoxItem Content="TokenHub (hy3-preview)" Tag="TokenHub"/>
+                        <ComboBoxItem Content="混元 HunyuanImage" Tag="HunyuanImage"/>
                         <ComboBoxItem Content="DALL-E 兼容" Tag="DALLE"/>
-                        <ComboBoxItem Content="Stable Diffusion" Tag="StableDiffusion"/>
                         <ComboBoxItem Content="自定义" Tag="Custom"/>
                     </ComboBox>
 

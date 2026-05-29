@@ -7,8 +7,12 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <AssemblyName>WeChatPublisher</AssemblyName>
     <RootNamespace>WeChatPublisher</RootNamespace>
+    <NoWarn>CS7022;CA1416</NoWarn>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Tools\**\*</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

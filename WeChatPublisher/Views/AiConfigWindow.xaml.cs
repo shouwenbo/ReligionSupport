@@ -97,9 +97,9 @@ public partial class AiConfigWindow : Window
             {
                 (TxtImageBaseUrl.Text, TxtImageModel.Text) = tag switch
                 {
+                    "TokenHub" => ("https://tokenhub.tencentmaas.com/v1", "hy3-preview"),
                     "HunyuanImage" => ("https://api.hunyuan.cloud.tencent.com/v1", "hunyuan-image-3.0-instruct"),
                     "DALLE" => ("https://api.openai.com", "dall-e-3"),
-                    "StableDiffusion" => ("http://localhost:7860", "stable-diffusion"),
                     _ => ("", "")
                 };
             }
