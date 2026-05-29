@@ -80,7 +80,7 @@ public class AppSettings
                 BaseUrl = "https://tokenhub.tencentmaas.com/v1",
                 ApiKeyEncrypted = secrets.TokenHubKey != null
                     ? ConfigEncryptionService.Encrypt(secrets.TokenHubKey) : null,
-                ModelName = "ep-km3k66ay",
+                ModelName = "hy-image-v3.0",
                 IsActive = 1,
                 CreatedAt = now, UpdatedAt = now
             }).ExecuteCommand());
