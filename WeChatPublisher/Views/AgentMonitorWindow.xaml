@@ -1,0 +1,35 @@
+<Window x:Class="WeChatPublisher.Views.AgentMonitorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Agent 任务监控" Height="550" Width="800"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="BtnRefresh" Content="刷新" Width="60" Click="BtnRefresh_Click"/>
+            <Button x:Name="BtnClear" Content="清空日志" Width="70" Margin="8,0,0,0" Click="BtnClear_Click"/>
+            <TextBlock x:Name="TbTaskInfo" Text="" Margin="16,0,0,0" VerticalAlignment="Center"
+                       Foreground="#2c3e50" FontSize="13"/>
+        </StackPanel>
+
+        <TreeView Grid.Row="1" x:Name="TvSteps" FontFamily="Consolas" FontSize="13"
+                  Background="#1e1e1e" Foreground="#d4d4d4">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <Setter Property="IsExpanded" Value="True"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
+        </TreeView>
+
+        <StatusBar Grid.Row="2" Margin="0,8,0,0">
+            <StatusBarItem>
+                <TextBlock x:Name="TbStatus" Text="就绪"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
