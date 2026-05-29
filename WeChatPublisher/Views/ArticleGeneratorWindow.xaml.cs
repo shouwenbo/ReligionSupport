@@ -20,6 +20,7 @@ public partial class ArticleGeneratorWindow : Window
         try
         {
             InitializeComponent();
+        AppIcon.Set(this);
             Loaded += OnLoaded;
         }
         catch (Exception ex)

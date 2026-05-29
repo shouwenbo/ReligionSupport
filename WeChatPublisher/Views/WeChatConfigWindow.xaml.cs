@@ -15,6 +15,7 @@ public partial class WeChatConfigWindow : Window
     public WeChatConfigWindow()
     {
         InitializeComponent();
+        AppIcon.Set(this);
         Loaded += (_, _) => RefreshList();
     }
 

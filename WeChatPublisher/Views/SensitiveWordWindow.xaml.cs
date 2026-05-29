@@ -18,6 +18,7 @@ public partial class SensitiveWordWindow : Window
     public SensitiveWordWindow()
     {
         InitializeComponent();
+        AppIcon.Set(this);
         Loaded += (_, _) =>
         {
             _service.SeedDefaults();

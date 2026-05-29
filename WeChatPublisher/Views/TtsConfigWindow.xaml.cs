@@ -13,6 +13,7 @@ public partial class TtsConfigWindow : Window
     public TtsConfigWindow()
     {
         InitializeComponent();
+        AppIcon.Set(this);
         Loaded += OnLoaded;
     }
 

@@ -13,6 +13,7 @@ public partial class AiConfigWindow : Window
     public AiConfigWindow()
     {
         InitializeComponent();
+        AppIcon.Set(this);
         Loaded += OnLoaded;
     }
 

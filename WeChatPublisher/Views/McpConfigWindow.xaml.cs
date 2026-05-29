@@ -13,6 +13,7 @@ public partial class McpConfigWindow : Window
     public McpConfigWindow()
     {
         InitializeComponent();
+        AppIcon.Set(this);
         Loaded += (_, _) => RefreshList();
     }
 

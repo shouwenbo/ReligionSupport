@@ -10,6 +10,7 @@ public partial class AgentMonitorWindow : Window
     public AgentMonitorWindow()
     {
         InitializeComponent();
+        AppIcon.Set(this);
         Loaded += OnLoaded;
     }
 

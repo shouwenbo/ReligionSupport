@@ -9,6 +9,7 @@ public partial class PublishWindow : Window
     public PublishWindow()
     {
         InitializeComponent();
+        AppIcon.Set(this);
         Loaded += (_, _) => RefreshAll();
     }
 

@@ -13,6 +13,7 @@ public partial class VideoGeneratorWindow : Window
     public VideoGeneratorWindow()
     {
         InitializeComponent();
+        AppIcon.Set(this);
         TxtOutputFolder.Text = AppSettings.Instance.DefaultOutputVideoRoot;
 
         var biblePath = AppSettings.Instance.BibleDbPath;

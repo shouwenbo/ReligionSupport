@@ -13,6 +13,7 @@ public partial class MainWindow : Window
     {
         Logger.Info("MainWindow 启动");
         InitializeComponent();
+        AppIcon.Set(this);
         Loaded += OnLoaded;
     }
 
