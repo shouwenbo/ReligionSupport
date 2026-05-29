@@ -10,28 +10,18 @@ public class McpResourceConfig
     public string Name { get; set; } = "";
     public string ResourceType { get; set; } = "LocalFolder";
     public string Path { get; set; } = "";
-    public string? FileFilter { get; set; } = "*.*";
-    public string? Description { get; set; }
-    public string? LastCachedAt { get; set; }
+    [SugarColumn(IsNullable = true)] public string? FileFilter { get; set; } = "*.*";
+    [SugarColumn(IsNullable = true)] public string? Description { get; set; }
+    [SugarColumn(IsNullable = true)] public string? LastCachedAt { get; set; }
     public int CachedFileCount { get; set; }
     public int IsHealthy { get; set; }
-    public string? LastHealthCheck { get; set; }
-    public string? HealthMessage { get; set; }
+    [SugarColumn(IsNullable = true)] public string? LastHealthCheck { get; set; }
+    [SugarColumn(IsNullable = true)] public string? HealthMessage { get; set; }
     public string CreatedAt { get; set; } = "";
     public string UpdatedAt { get; set; } = "";
 
     [SugarColumn(IsIgnore = true)]
-    public string TypeDisplay => ResourceType switch
-    {
-        "LocalFolder" => $"📁 本地文件夹",
-        "NetworkShare" => $"🖥 网络共享",
-        "WebUrl" => $"🌐 网页",
-        "RssFeed" => $"📡 RSS订阅",
-        _ => ResourceType
-    };
-
-    [SugarColumn(IsIgnore = true)]
-    public string HealthDisplay => IsHealthy == 1 ? "●" : "○";
+    public string HealthDisplay => IsHealthy == 1 ? "OK" : "-";
 }
 
 [SugarTable("McpCacheEntries")]
@@ -44,8 +34,8 @@ public class McpCacheEntry
     public string FileName { get; set; } = "";
     public long FileSize { get; set; }
     public string LastModified { get; set; } = "";
-    public string? ContentSample { get; set; }
-    public string? AiSummary { get; set; }
+    [SugarColumn(IsNullable = true)] public string? ContentSample { get; set; }
+    [SugarColumn(IsNullable = true)] public string? AiSummary { get; set; }
     public int IsProcessed { get; set; }
     public string CachedAt { get; set; } = "";
 }

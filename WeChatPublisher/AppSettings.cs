@@ -61,11 +61,12 @@ public class AppSettings
                 ProviderName = "DeepSeek",
                 BaseUrl = "https://api.deepseek.com",
                 ApiKeyEncrypted = secrets.DeepSeekKey != null
-                    ? ConfigEncryptionService.Encrypt(secrets.DeepSeekKey) : null,
+                    ? ConfigEncryptionService.Encrypt(secrets.DeepSeekKey) : "",
                 ModelName = "deepseek-chat",
+                SystemPrompt = "", ExtraHeaders = "",
                 DefaultMaxTokens = 4096,
                 DefaultTemperature = 0.7,
-                IsActive = 1,
+                IsActive = 1, IsHealthy = 0,
                 CreatedAt = now, UpdatedAt = now
             }).ExecuteCommand());
         }
@@ -79,9 +80,12 @@ public class AppSettings
                 ProviderName = "TokenHub",
                 BaseUrl = "https://tokenhub.tencentmaas.com/v1",
                 ApiKeyEncrypted = secrets.TokenHubKey != null
-                    ? ConfigEncryptionService.Encrypt(secrets.TokenHubKey) : null,
+                    ? ConfigEncryptionService.Encrypt(secrets.TokenHubKey) : "",
                 ModelName = "hy-image-v3.0",
-                IsActive = 1,
+                SystemPrompt = "", ExtraHeaders = "",
+                DefaultMaxTokens = 0,
+                DefaultTemperature = 0,
+                IsActive = 1, IsHealthy = 0,
                 CreatedAt = now, UpdatedAt = now
             }).ExecuteCommand());
 
@@ -95,7 +99,9 @@ public class AppSettings
                     BaseUrl = "https://api.hunyuan.cloud.tencent.com/v1",
                     ApiKeyEncrypted = ConfigEncryptionService.Encrypt(secrets.HunyuanKey),
                     ModelName = "hunyuan-image-3.0-instruct",
-                    IsActive = 0,
+                    SystemPrompt = "", ExtraHeaders = "",
+                    DefaultMaxTokens = 0, DefaultTemperature = 0,
+                    IsActive = 0, IsHealthy = 0,
                     CreatedAt = now, UpdatedAt = now
                 }).ExecuteCommand());
             }
