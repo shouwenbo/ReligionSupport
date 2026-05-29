@@ -48,9 +48,19 @@
     <None Update="Data\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\**\*">
+    <None Update="Assets\ffmpeg.exe" Condition="Exists('Assets\ffmpeg.exe')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\ffprobe.exe" Condition="Exists('Assets\ffprobe.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\default_cover.jpg" Condition="Exists('Assets\default_cover.jpg')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\app_icon.png" Condition="Exists('Assets\app_icon.png')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Resource Include="Assets\app.ico" />
   </ItemGroup>
 
 </Project>
