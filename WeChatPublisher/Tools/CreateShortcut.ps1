@@ -1,14 +1,11 @@
-$exe = "f:\code\ReligionSupport\WeChatPublisher\bin\Release\net8.0-windows\publish\公众号视频号发布工具.exe"
-$ico = "f:\code\ReligionSupport\WeChatPublisher\Assets\app.ico"
-$startMenu = [Environment]::GetFolderPath('StartMenu') + '\Programs\公众号视频号发布工具'
-New-Item -ItemType Directory -Force -Path $startMenu | Out-Null
-
-$WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$startMenu\公众号视频号发布工具.lnk")
-$Shortcut.TargetPath = $exe
-$Shortcut.IconLocation = "$ico,0"
-$Shortcut.WorkingDirectory = Split-Path $exe -Parent
-$Shortcut.Save()
-
-Write-Host "Shortcut created: $startMenu\公众号视频号发布工具.lnk"
-Write-Host "You can now find it in Start Menu, right-click -> Pin to Start"
+﻿$exe = "F:\code\ReligionSupport\WeChatPublisher\bin\Release\net8.0-windows\publish\微讯创作发布工具.exe"
+$ico = "F:\code\ReligionSupport\WeChatPublisher\Assets\app.ico"
+$folder = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\微讯创作发布工具"
+New-Item -ItemType Directory -Force -Path $folder | Out-Null
+$ws = New-Object -ComObject WScript.Shell
+$sc = $ws.CreateShortcut("$folder\微讯创作发布工具.lnk")
+$sc.TargetPath = $exe
+$sc.IconLocation = "$ico,0"
+$sc.WorkingDirectory = Split-Path $exe -Parent
+$sc.Save()
+Write-Host "Shortcut created"
