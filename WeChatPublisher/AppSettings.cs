@@ -32,14 +32,25 @@ public class AppSettings
 
         _dbService = new DbService($"Data Source={dbPath}");
         _dbService.EnsureTablesCreated();
-        SeedDefaultAiConfigs();
+        SeedAllDefaults();
     }
 
-    private void SeedDefaultAiConfigs()
+    private void SeedAllDefaults()
+    {
+        var secrets = LoadSecrets();
+        SeedAiConfigs(secrets);
+        SeedTtsConfigs();
+        SeedSubtitleConfigs();
+        SeedMcpResources();
+        SeedSensitiveWords();
+        SeedWeChatConfig();
+    }
+
+    // ========== AI 配置 ==========
+    private void SeedAiConfigs((string? DeepSeekKey, string? HunyuanKey) secrets)
     {
         var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         var existing = _dbService!.ExecuteInScope(db => db.Queryable<AiConfig>().ToList());
-        var secrets = LoadSecrets();
 
         if (!existing.Any(c => c.ProviderType == "TextGeneration"))
         {
@@ -78,6 +89,154 @@ public class AppSettings
         }
     }
 
+    // ========== TTS 配置 (text-to-speech.cn) ==========
+    private void SeedTtsConfigs()
+    {
+        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        var existing = _dbService!.ExecuteInScope(db =>
+            db.Queryable<TtsApiConfig>().Where(c => c.ConfigType == "TTS").ToList());
+
+        if (existing.Count > 0) return;
+
+        var defaultParams = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string>
+        {
+            ["language"] = "中文（普通话，简体）",
+            ["voice"] = "zh-CN-YunzeNeural",
+            ["role"] = "OlderAdultMale",
+            ["style"] = "calm",
+            ["styledegree"] = "2",
+            ["rate"] = "-26",
+            ["pitch"] = "-10",
+            ["kbitrate"] = "audio-48khz-192kbitrate-mono-mp3",
+            ["silence"] = "500ms",
+            ["volume"] = "x-loud"
+        });
+
+        _dbService.ExecuteInScope(db => db.Insertable(new TtsApiConfig
+        {
+            ConfigType = "TTS",
+            ApiType = "WebScrape",
+            BaseUrl = "https://www.text-to-speech.cn",
+            TokenFetchUrl = "/",
+            TokenRegexPattern = "const token = '([^']+)'",
+            GenerateEndpoint = "/getSpeek.php",
+            SuccessCodeField = "code",
+            SuccessCodeValue = "200",
+            DefaultParamsJSON = defaultParams,
+            IsActive = 1,
+            CreatedAt = now,
+            UpdatedAt = now
+        }).ExecuteCommand());
+    }
+
+    // ========== 字幕配置 (text-to-speech.cn) ==========
+    private void SeedSubtitleConfigs()
+    {
+        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        var existing = _dbService!.ExecuteInScope(db =>
+            db.Queryable<TtsApiConfig>().Where(c => c.ConfigType == "Subtitle").ToList());
+
+        if (existing.Count > 0) return;
+
+        _dbService.ExecuteInScope(db => db.Insertable(new TtsApiConfig
+        {
+            ConfigType = "Subtitle",
+            ApiType = "WebScrape",
+            BaseUrl = "https://www.text-to-speech.cn",
+            TokenFetchUrl = "/srt.html",
+            TokenRegexPattern = "const token = '([^']+)'",
+            GenerateEndpoint = "/getSrt.php",
+            SuccessCodeField = "code",
+            SuccessCodeValue = "200",
+            DefaultParamsJSON = "{\"language\":\"zh-CN\"}",
+            IsActive = 1,
+            CreatedAt = now,
+            UpdatedAt = now
+        }).ExecuteCommand());
+    }
+
+    // ========== MCP 资源 ==========
+    private void SeedMcpResources()
+    {
+        var existing = _dbService!.ExecuteInScope(db => db.Queryable<McpResourceConfig>().ToList());
+        if (existing.Count > 0) return;
+
+        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        var defaults = new List<McpResourceConfig>
+        {
+            new() { Name = "公众号文案", ResourceType = "LocalFolder",
+                     Path = GetJsonValue("Defaults:OutputArticleRoot"),
+                     FileFilter = "*.docx", Description = "公众号文案输出目录",
+                     CreatedAt = now, UpdatedAt = now },
+            new() { Name = "读经感悟", ResourceType = "LocalFolder",
+                     Path = @"F:\个人 & 文档\读经感悟",
+                     FileFilter = "*.txt", Description = "读经感悟笔记",
+                     CreatedAt = now, UpdatedAt = now },
+            new() { Name = "插图素材", ResourceType = "LocalFolder",
+                     Path = @"F:\传道 & 美图\插图素材",
+                     FileFilter = "*.jpg;*.jpeg;*.png", Description = "文章配图素材库",
+                     CreatedAt = now, UpdatedAt = now },
+            new() { Name = "视频号输出", ResourceType = "LocalFolder",
+                     Path = GetJsonValue("Defaults:OutputVideoRoot"),
+                     FileFilter = "*.mp4", Description = "短视频输出目录",
+                     CreatedAt = now, UpdatedAt = now },
+        };
+
+        _dbService.ExecuteInScope(db => db.Insertable(defaults).ExecuteCommand());
+    }
+
+    // ========== 敏感词 ==========
+    private void SeedSensitiveWords()
+    {
+        var existing = _dbService!.ExecuteInScope(db => db.Queryable<SensitiveWord>().ToList());
+        if (existing.Count > 0) return;
+
+        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        var defaults = new List<SensitiveWord>
+        {
+            new() { SourceWord = "神",     ReplacementWords = "父亲;阿爸;源头",       Category = "称谓", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "上帝",   ReplacementWords = "父亲;源头",            Category = "称谓", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "耶稣",   ReplacementWords = "老师;TA;榜样",          Category = "人名", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "基督",   ReplacementWords = "老师;TA",              Category = "称谓", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "圣灵",   ReplacementWords = "内心引导;内在力量",     Category = "概念", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "主",     ReplacementWords = "TA;父亲",              Category = "称谓", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "基督教", ReplacementWords = "信仰团体",              Category = "组织", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "教堂",   ReplacementWords = "聚会场所;家园",         Category = "场所", StrictLevel = 0, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "祷告",   ReplacementWords = "默想;交流;倾诉",        Category = "行为", StrictLevel = 0, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "圣经",   ReplacementWords = "智慧书;经典",           Category = "物品", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "福音",   ReplacementWords = "好消息;佳音",           Category = "概念", StrictLevel = 0, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "救赎",   ReplacementWords = "更新;改变",             Category = "概念", StrictLevel = 0, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "恩典",   ReplacementWords = "礼物;馈赠",             Category = "概念", StrictLevel = 0, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "阿门",   ReplacementWords = "诚心所愿;真心祝愿",     Category = "用语", StrictLevel = 0, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "哈利路亚", ReplacementWords = "赞美;感恩",           Category = "用语", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "弥赛亚", ReplacementWords = "老师;TA",              Category = "概念", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "救主",   ReplacementWords = "老师;TA",              Category = "称谓", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "敬拜",   ReplacementWords = "赞美;表达敬意",         Category = "行为", StrictLevel = 0, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "团契",   ReplacementWords = "聚会;小组",             Category = "活动", StrictLevel = 1, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+            new() { SourceWord = "传道",   ReplacementWords = "分享;讲述",             Category = "行为", StrictLevel = 0, IsEnabled = 1, CreatedAt = now, UpdatedAt = now },
+        };
+        _dbService.ExecuteInScope(db => db.Insertable(defaults).ExecuteCommand());
+    }
+
+    // ========== 公众号凭证空配置 ==========
+    private void SeedWeChatConfig()
+    {
+        var existing = _dbService!.ExecuteInScope(db => db.Queryable<WeChatConfig>().ToList());
+        if (existing.Count > 0) return;
+
+        _dbService.ExecuteInScope(db => db.Insertable(new WeChatConfig
+        {
+            AppId = "",
+            ApiBaseUrl = "https://api.weixin.qq.com",
+            PublishAsDraft = 1,
+            AutoSanitize = 1,
+            IsActive = 1,
+            CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+        }).ExecuteCommand());
+    }
+
+    // ========== 读取本地密钥 ==========
     private static (string? DeepSeekKey, string? HunyuanKey) LoadSecrets()
     {
         try
