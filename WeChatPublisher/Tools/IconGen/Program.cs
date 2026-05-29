@@ -1,159 +1,98 @@
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.Text;
 using System.Text.Json;
 
-var secrets = JsonDocument.Parse(File.ReadAllText(
-    @"f:\code\ReligionSupport\WeChatPublisher\Resources\secrets.json"));
-var key = secrets.RootElement.GetProperty("HunyuanImageApiKey").GetString()!;
+var secretsPath = @"f:\code\ReligionSupport\WeChatPublisher\Resources\secrets.json";
+var secrets = JsonDocument.Parse(File.ReadAllText(secretsPath));
+var key = secrets.RootElement.GetProperty("TokenHubApiKey").GetString()!;
+Console.WriteLine($"TokenHub Key: {key[..8]}...");
 
 using var http = new HttpClient();
 http.DefaultRequestHeaders.Add("Authorization", $"Bearer {key}");
 http.Timeout = TimeSpan.FromMinutes(3);
 
-Console.WriteLine("Testing image generation via chat API...");
+var prompt = "Generate a modern minimalist app icon: glowing golden cross combined with a dove transforming into an upward paper plane. Deep blue to purple gradient background (hex #1a1a2e to #16213e). Clean flat design, no text, high contrast, circular rounded-square composition. The icon should be beautiful and recognizable at 256x256, 64x64, and 32x32 sizes. Save as PNG.";
 
-// Try image generation through chat completions with different models
-var attempts = new[]
+Console.WriteLine("Calling TokenHub image generation...");
+var body = new
 {
-    ("hunyuan-image-3.0-instruct", "Generate a simple golden paper plane icon on dark blue background"),
-    ("hunyuan-turbos-latest", "Generate an image: a golden paper plane icon on dark blue background"),
-    ("hunyuan-vision", "Generate an image: a golden paper plane icon on dark blue background"),
+    model = "ep-km3k66ay",
+    instructions = "You are an image generator. Generate the image exactly as described by the user.",
+    input = prompt,
+    stream = false
 };
 
-foreach (var (model, prompt) in attempts)
+var resp = await http.PostAsync("https://tokenhub.tencentmaas.com/v1/responses",
+    new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"));
+var json = await resp.Content.ReadAsStringAsync();
+Console.WriteLine($"HTTP {resp.StatusCode}");
+Console.WriteLine($"Response ({json.Length} chars): {json[..Math.Min(500, json.Length)]}");
+
+using var doc = JsonDocument.Parse(json);
+var root = doc.RootElement;
+
+// Check for error
+if (root.TryGetProperty("error", out var error))
 {
-    var body = new
-    {
-        model,
-        messages = new[] { new { role = "user", content = prompt } },
-        max_tokens = 500
-    };
-    var resp = await http.PostAsync("https://api.hunyuan.cloud.tencent.com/v1/chat/completions",
-        new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"));
-    var json = await resp.Content.ReadAsStringAsync();
-    Console.WriteLine($"\nModel: {model} => {resp.StatusCode} ({json.Length} bytes)");
-    if (json.Length > 0) Console.WriteLine($"  {json[..Math.Min(250, json.Length)]}");
+    Console.WriteLine($"API Error: {error}");
+    return;
 }
 
-// Also try different image endpoints
-Console.WriteLine("\n\nTrying alternative image endpoints...");
-var imgEndpoints = new[]
-{
-    "https://api.hunyuan.cloud.tencent.com/v1/images/generations",
-    "https://api.hunyuan.cloud.tencent.com/openapi/v1/images/ar/generations",
-    "https://hunyuan.tencentcloudapi.com/",
-};
+// Check response fields
+Console.WriteLine("\nResponse fields:");
+foreach (var prop in root.EnumerateObject())
+    Console.WriteLine($"  {prop.Name}: {prop.Value.ValueKind}");
 
-foreach (var url in imgEndpoints)
+// Try to extract image
+string? imageUrl = null;
+string? base64 = null;
+
+if (root.TryGetProperty("output", out var output))
 {
-    var body = new { prompt = "icon", n = 1, size = "256x256" };
-    try
+    var text = output.GetString() ?? "";
+    Console.WriteLine($"\nOutput preview: {text[..Math.Min(300, text.Length)]}");
+
+    // Look for URLs
+    foreach (var word in text.Split(' ', '\n', '\r'))
     {
-        var resp = await http.PostAsync(url,
-            new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"));
-        Console.WriteLine($"  {url} => {resp.StatusCode}");
+        var w = word.Trim();
+        if (w.StartsWith("http") && (w.Contains(".png") || w.Contains(".jpg") || w.Contains("image")))
+            imageUrl = w;
+        if (w.StartsWith("data:image"))
+            base64 = w.Split(",", 2).Last();
     }
-    catch (Exception ex) { Console.WriteLine($"  {url} => {ex.Message}"); }
 }
 
-Console.WriteLine("\nFalling back to code-generated icon...");
-DrawIcon();
+// Check for direct url
+if (root.TryGetProperty("url", out var urlProp))
+    imageUrl = urlProp.GetString();
 
-static void DrawIcon()
+// Check for data
+if (root.TryGetProperty("data", out var data))
 {
-    var path = @"f:\code\ReligionSupport\WeChatPublisher\Assets\app.ico";
-    using var bmp = new Bitmap(256, 256);
-    using var g = Graphics.FromImage(bmp);
-    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
-    // Gradient background
-    var bg = new Rectangle(0, 0, 256, 256);
-    using var bgBrush = new System.Drawing.Drawing2D.LinearGradientBrush(bg,
-        Color.FromArgb(20, 20, 50), Color.FromArgb(40, 20, 60),
-        System.Drawing.Drawing2D.LinearGradientMode.Vertical);
-    g.FillRectangle(bgBrush, bg);
-
-    // Glowing circle
-    using var glowBrush = new SolidBrush(Color.FromArgb(30, 255, 215, 0));
-    g.FillEllipse(glowBrush, 68, 45, 120, 120);
-    using var glowBrush2 = new SolidBrush(Color.FromArgb(15, 255, 215, 0));
-    g.FillEllipse(glowBrush2, 48, 25, 160, 160);
-
-    // Paper plane (sending icon)
-    using var gold = new SolidBrush(Color.FromArgb(255, 215, 0));
-    var planePts = new[] {
-        new Point(128, 35),
-        new Point(185, 125),
-        new Point(128, 108),
-        new Point(71, 125)
-    };
-    g.FillPolygon(gold, planePts);
-
-    // Wings
-    using var pen = new Pen(Color.FromArgb(200, 255, 215, 0), 2.5f);
-    g.DrawLine(pen, 128, 62, 172, 107);
-    g.DrawLine(pen, 128, 62, 84, 107);
-
-    // Motion lines
-    var sparkles = new[] { (60, 95), (196, 95), (50, 120), (206, 120), (185, 75), (71, 75) };
-    foreach (var (x, y) in sparkles)
+    if (data.ValueKind == JsonValueKind.Array && data.GetArrayLength() > 0)
     {
-        using var b = new SolidBrush(Color.FromArgb(150, 255, 255, 255));
-        g.FillEllipse(b, x, y, 3, 3);
+        var item = data[0];
+        if (item.TryGetProperty("url", out var u)) imageUrl = u.GetString();
+        if (item.TryGetProperty("b64_json", out var b)) base64 = b.GetString();
     }
-
-    // Cross
-    using var crossPen = new Pen(Color.White, 1.2f);
-    g.DrawLine(crossPen, 125, 72, 131, 72);
-    g.DrawLine(crossPen, 128, 69, 128, 75);
-
-    // Text
-    using var font = new Font("Segoe UI", 7, FontStyle.Regular);
-    using var textBrush = new SolidBrush(Color.FromArgb(80, 255, 255, 255));
-    g.DrawString("WECHAT PUBLISHER", font, textBrush, new PointF(72, 230));
-
-    // Rounded border
-    using var borderPen = new Pen(Color.FromArgb(50, 255, 255, 255), 1.5f);
-    g.DrawRoundedRectangle(borderPen, new Rectangle(3, 3, 250, 250), 40);
-
-    // Save ICO
-    SaveIco(bmp, path);
-    Console.WriteLine($"ICO: {path}");
 }
 
-static void SaveIco(Bitmap bmp, string path)
+if (imageUrl != null)
 {
-    var sizes = new[] { 256, 128, 64, 48, 32, 16 };
-    using var fs = new FileStream(path, FileMode.Create);
-    using var bw = new BinaryWriter(fs);
-    bw.Write((short)0); bw.Write((short)1); bw.Write((short)sizes.Length);
-    var chunks = new List<byte[]>(); int offset = 6 + sizes.Length * 16;
-    foreach (var s in sizes)
-    {
-        using var r = new Bitmap(bmp, new Size(s, s));
-        using var m = new MemoryStream(); r.Save(m, ImageFormat.Png);
-        var d = m.ToArray(); chunks.Add(d);
-        int sz = s == 256 ? 0 : s;
-        bw.Write((byte)sz); bw.Write((byte)sz); bw.Write((byte)0); bw.Write((byte)0);
-        bw.Write((short)1); bw.Write((short)32); bw.Write(d.Length); bw.Write(offset);
-        offset += d.Length;
-    }
-    foreach (var c in chunks) bw.Write(c);
+    Console.WriteLine($"Downloading: {imageUrl[..Math.Min(80, imageUrl.Length)]}");
+    var bytes = await http.GetByteArrayAsync(imageUrl);
+    File.WriteAllBytes(@"f:\code\ReligionSupport\WeChatPublisher\Assets\app_icon.png", bytes);
+    Console.WriteLine($"PNG saved ({bytes.Length} bytes)");
+    Console.WriteLine("Now convert to ICO manually or run icon tool");
 }
-
-public static class Extensions
+else if (base64 != null)
 {
-    public static void DrawRoundedRectangle(this Graphics g, Pen pen, Rectangle rect, int radius)
-    {
-        int d = radius * 2;
-        g.DrawArc(pen, rect.X, rect.Y, d, d, 180, 90);
-        g.DrawArc(pen, rect.Right - d, rect.Y, d, d, 270, 90);
-        g.DrawArc(pen, rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-        g.DrawArc(pen, rect.X, rect.Bottom - d, d, d, 90, 90);
-        g.DrawLine(pen, rect.X + radius, rect.Y, rect.Right - radius, rect.Y);
-        g.DrawLine(pen, rect.Right, rect.Y + radius, rect.Right, rect.Bottom - radius);
-        g.DrawLine(pen, rect.Right - radius, rect.Bottom, rect.X + radius, rect.Bottom);
-        g.DrawLine(pen, rect.X, rect.Bottom - radius, rect.X, rect.Y + radius);
-    }
+    var bytes = Convert.FromBase64String(base64);
+    File.WriteAllBytes(@"f:\code\ReligionSupport\WeChatPublisher\Assets\app_icon.png", bytes);
+    Console.WriteLine($"PNG saved from base64 ({bytes.Length} bytes)");
+}
+else
+{
+    Console.WriteLine("No image found in response. Full response:");
+    Console.WriteLine(json);
 }

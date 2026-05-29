@@ -72,29 +72,29 @@ public class AppSettings
 
         if (!existing.Any(c => c.ProviderType == "ImageGeneration"))
         {
-            // 主: 混元
+            // 主: TokenHub (已验证API格式)
             _dbService.ExecuteInScope(db => db.Insertable(new AiConfig
             {
                 ProviderType = "ImageGeneration",
-                ProviderName = "HunyuanImage",
-                BaseUrl = "https://api.hunyuan.cloud.tencent.com/v1",
-                ApiKeyEncrypted = secrets.HunyuanKey != null
-                    ? ConfigEncryptionService.Encrypt(secrets.HunyuanKey) : null,
-                ModelName = "hunyuan-image-3.0-instruct",
+                ProviderName = "TokenHub",
+                BaseUrl = "https://tokenhub.tencentmaas.com/v1",
+                ApiKeyEncrypted = secrets.TokenHubKey != null
+                    ? ConfigEncryptionService.Encrypt(secrets.TokenHubKey) : null,
+                ModelName = "ep-km3k66ay",
                 IsActive = 1,
                 CreatedAt = now, UpdatedAt = now
             }).ExecuteCommand());
 
-            // 备选: TokenHub
-            if (secrets.TokenHubKey != null)
+            // 备选: 混元
+            if (secrets.HunyuanKey != null)
             {
                 _dbService.ExecuteInScope(db => db.Insertable(new AiConfig
                 {
                     ProviderType = "ImageGeneration",
-                    ProviderName = "TokenHub",
-                    BaseUrl = "https://tokenhub.tencentmaas.com/v1",
-                    ApiKeyEncrypted = ConfigEncryptionService.Encrypt(secrets.TokenHubKey),
-                    ModelName = "hy3-preview",
+                    ProviderName = "HunyuanImage",
+                    BaseUrl = "https://api.hunyuan.cloud.tencent.com/v1",
+                    ApiKeyEncrypted = ConfigEncryptionService.Encrypt(secrets.HunyuanKey),
+                    ModelName = "hunyuan-image-3.0-instruct",
                     IsActive = 0,
                     CreatedAt = now, UpdatedAt = now
                 }).ExecuteCommand());
