@@ -32,6 +32,70 @@ public class AppSettings
 
         _dbService = new DbService($"Data Source={dbPath}");
         _dbService.EnsureTablesCreated();
+        SeedDefaultAiConfigs();
+    }
+
+    private void SeedDefaultAiConfigs()
+    {
+        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        var existing = _dbService!.ExecuteInScope(db => db.Queryable<AiConfig>().ToList());
+        var secrets = LoadSecrets();
+
+        if (!existing.Any(c => c.ProviderType == "TextGeneration"))
+        {
+            _dbService.ExecuteInScope(db => db.Insertable(new AiConfig
+            {
+                ProviderType = "TextGeneration",
+                ProviderName = "DeepSeek",
+                BaseUrl = "https://api.deepseek.com",
+                ApiKeyEncrypted = secrets.DeepSeekKey != null
+                    ? ConfigEncryptionService.Encrypt(secrets.DeepSeekKey) : null,
+                ModelName = "deepseek-chat",
+                DefaultMaxTokens = 4096,
+                DefaultTemperature = 0.7,
+                IsActive = 1,
+                CreatedAt = now,
+                UpdatedAt = now
+            }).ExecuteCommand());
+        }
+
+        if (!existing.Any(c => c.ProviderType == "ImageGeneration"))
+        {
+            _dbService.ExecuteInScope(db => db.Insertable(new AiConfig
+            {
+                ProviderType = "ImageGeneration",
+                ProviderName = "HunyuanImage",
+                BaseUrl = "https://api.hunyuan.cloud.tencent.com/v1",
+                ApiKeyEncrypted = secrets.HunyuanKey != null
+                    ? ConfigEncryptionService.Encrypt(secrets.HunyuanKey) : null,
+                ModelName = "hunyuan-image-3.0-instruct",
+                DefaultMaxTokens = 0,
+                DefaultTemperature = 0,
+                IsActive = 1,
+                CreatedAt = now,
+                UpdatedAt = now
+            }).ExecuteCommand());
+        }
+    }
+
+    private static (string? DeepSeekKey, string? HunyuanKey) LoadSecrets()
+    {
+        try
+        {
+            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "secrets.json");
+            if (!File.Exists(path)) return (null, null);
+
+            var json = File.ReadAllText(path);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var deepseek = root.TryGetProperty("DeepSeekApiKey", out var dk) ? dk.GetString() : null;
+            var hunyuan = root.TryGetProperty("HunyuanImageApiKey", out var hk) ? hk.GetString() : null;
+            return (deepseek, hunyuan);
+        }
+        catch
+        {
+            return (null, null);
+        }
     }
 
     public string GetJsonValue(string key)

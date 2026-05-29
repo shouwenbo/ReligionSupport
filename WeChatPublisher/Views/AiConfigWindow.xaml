@@ -70,17 +70,22 @@
                     </Grid.ColumnDefinitions>
 
                     <Label Grid.Row="0" Grid.Column="0" Content="提供商:"/>
-                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="CmbImageProvider" Margin="0,2">
+                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="CmbImageProvider" Margin="0,2"
+                              SelectionChanged="CmbImageProvider_SelectionChanged">
+                        <ComboBoxItem Content="混元 HunyuanImage 3.0-Instruct" Tag="HunyuanImage"/>
                         <ComboBoxItem Content="DALL-E 兼容" Tag="DALLE"/>
                         <ComboBoxItem Content="Stable Diffusion" Tag="StableDiffusion"/>
                         <ComboBoxItem Content="自定义" Tag="Custom"/>
                     </ComboBox>
 
-                    <Label Grid.Row="1" Grid.Column="0" Content="API 地址:"/>
-                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="TxtImageBaseUrl" Margin="0,2"/>
+                    <Label Grid.Row="1" Grid.Column="0" Content="模型名称:"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="TxtImageModel" Margin="0,2"/>
 
-                    <Label Grid.Row="2" Grid.Column="0" Content="API Key:"/>
-                    <Grid Grid.Row="2" Grid.Column="1" Margin="0,2">
+                    <Label Grid.Row="2" Grid.Column="0" Content="API 地址:"/>
+                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="TxtImageBaseUrl" Margin="0,2"/>
+
+                    <Label Grid.Row="3" Grid.Column="0" Content="API Key:"/>
+                    <Grid Grid.Row="3" Grid.Column="1" Margin="0,2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/><ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
@@ -88,15 +93,15 @@
                         <Button Grid.Column="1" Content="测试" Width="55" Click="BtnTestImageAi_Click"/>
                     </Grid>
 
-                    <Label Grid.Row="3" Grid.Column="0" Content="默认尺寸:"/>
-                    <ComboBox Grid.Row="3" Grid.Column="1" x:Name="CmbImageSize" Margin="0,2">
+                    <Label Grid.Row="4" Grid.Column="0" Content="默认尺寸:"/>
+                    <ComboBox Grid.Row="4" Grid.Column="1" x:Name="CmbImageSize" Margin="0,2">
                         <ComboBoxItem Content="1024x1024"/>
                         <ComboBoxItem Content="1792x1024"/>
                         <ComboBoxItem Content="1024x1792"/>
                     </ComboBox>
 
-                    <Label Grid.Row="4" Grid.Column="0" Content="默认张数:"/>
-                    <TextBox Grid.Row="4" Grid.Column="1" x:Name="TxtImageCount" Margin="0,2" Text="1"/>
+                    <Label Grid.Row="5" Grid.Column="0" Content="默认张数:"/>
+                    <TextBox Grid.Row="5" Grid.Column="1" x:Name="TxtImageCount" Margin="0,2" Text="1"/>
                 </Grid>
             </TabItem>
         </TabControl>

@@ -44,6 +44,7 @@ public partial class AiConfigWindow : Window
 
         if (_imageConfig != null)
         {
+            TxtImageModel.Text = _imageConfig.ModelName;
             TxtImageBaseUrl.Text = _imageConfig.BaseUrl;
             if (_imageConfig.ApiKeyEncrypted != null)
             {
@@ -83,6 +84,23 @@ public partial class AiConfigWindow : Window
                     "DeepSeek" => "deepseek-chat",
                     "OpenAI" => "gpt-4o",
                     _ => ""
+                };
+            }
+        }
+    }
+
+    private void CmbImageProvider_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CmbImageProvider.SelectedItem is ComboBoxItem item && item.Tag is string tag)
+        {
+            if (TxtImageBaseUrl.Text.Length == 0 || _imageConfig == null)
+            {
+                (TxtImageBaseUrl.Text, TxtImageModel.Text) = tag switch
+                {
+                    "HunyuanImage" => ("https://api.hunyuan.cloud.tencent.com/v1", "hunyuan-image-3.0-instruct"),
+                    "DALLE" => ("https://api.openai.com", "dall-e-3"),
+                    "StableDiffusion" => ("http://localhost:7860", "stable-diffusion"),
+                    _ => ("", "")
                 };
             }
         }

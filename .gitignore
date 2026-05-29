@@ -386,3 +386,6 @@ publish/
 
 # 日志文件
 log.txt
+
+# 本地密钥文件（脱敏）
+**/Resources/secrets.json
