@@ -16,16 +16,33 @@ public partial class ArticleGeneratorWindow : Window
     public ArticleGeneratorWindow(int? taskId = null)
     {
         _taskId = taskId;
-        InitializeComponent();
-        Loaded += OnLoaded;
+        Logger.Info($"ArticleGeneratorWindow 构造 taskId={taskId}");
+        try
+        {
+            InitializeComponent();
+            Loaded += OnLoaded;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("ArticleGeneratorWindow InitializeComponent 失败", ex);
+            throw;
+        }
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        RefreshMcpResources();
-        RefreshAiStatus();
-
-        if (_taskId.HasValue) LoadExistingTask(_taskId.Value);
+        try
+        {
+            Logger.Info("ArticleGeneratorWindow OnLoaded");
+            RefreshMcpResources();
+            RefreshAiStatus();
+            if (_taskId.HasValue) LoadExistingTask(_taskId.Value);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("ArticleGeneratorWindow OnLoaded 失败", ex);
+            MessageBox.Show($"加载失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void RefreshMcpResources()

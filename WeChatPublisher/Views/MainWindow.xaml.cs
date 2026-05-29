@@ -3,12 +3,15 @@ using System.Windows.Media;
 using SqlSugar;
 using WeChatPublisher.Models;
 
+using WeChatPublisher.Services;
+
 namespace WeChatPublisher.Views;
 
 public partial class MainWindow : Window
 {
     public MainWindow()
     {
+        Logger.Info("MainWindow 启动");
         InitializeComponent();
         Loaded += OnLoaded;
     }

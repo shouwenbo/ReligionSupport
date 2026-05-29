@@ -38,6 +38,7 @@ public class AppSettings
     private void SeedAllDefaults()
     {
         var secrets = LoadSecrets();
+        Services.Logger.Info("开始种子数据...");
         SeedAiConfigs(secrets);
         SeedTtsConfigs();
         SeedSubtitleConfigs();
@@ -45,6 +46,7 @@ public class AppSettings
         SeedSensitiveWords();
         SeedWeChatConfig();
         SeedPromptTemplates();
+        Services.Logger.Info("种子数据完成");
     }
 
     // ========== AI 配置 ==========
