@@ -102,6 +102,10 @@
 
                     <Label Grid.Row="5" Grid.Column="0" Content="默认张数:"/>
                     <TextBox Grid.Row="5" Grid.Column="1" x:Name="TxtImageCount" Margin="0,2" Text="1"/>
+
+                    <Label Grid.Row="6" Grid.Column="0" Content="AI生成水印:"/>
+                    <CheckBox Grid.Row="6" Grid.Column="1" x:Name="CbShowWatermark" Margin="0,4"
+                              Content="显示 [此图片由AI生成] 水印" IsChecked="False"/>
                 </Grid>
             </TabItem>
         </TabControl>

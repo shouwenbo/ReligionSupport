@@ -56,6 +56,7 @@ public partial class AiConfigWindow : Window
             if (!string.IsNullOrWhiteSpace(_imageConfig.ImageSize))
                 SelectByContent(CmbImageSize, _imageConfig.ImageSize);
             TxtImageCount.Text = _imageConfig.ImageCount.ToString();
+            CbShowWatermark.IsChecked = _imageConfig.LogoAdd == 1;
         }
     }
 
@@ -241,6 +242,7 @@ public partial class AiConfigWindow : Window
             _imageConfig.ModelName = TxtImageModel.Text.Trim();
             _imageConfig.ImageSize = (CmbImageSize.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "1024x1024";
             _imageConfig.ImageCount = int.TryParse(TxtImageCount.Text, out var ic) ? Math.Max(1, ic) : 1;
+            _imageConfig.LogoAdd = CbShowWatermark.IsChecked == true ? 1 : 0;
 
             if (!string.IsNullOrWhiteSpace(PbImageApiKey.Password))
                 _imageConfig.ApiKeyEncrypted = ConfigEncryptionService.Encrypt(PbImageApiKey.Password);

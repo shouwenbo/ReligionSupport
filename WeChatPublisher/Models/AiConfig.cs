@@ -17,7 +17,8 @@ public class AiConfig
     [SugarColumn(IsNullable = true)] public string? SystemPrompt { get; set; }
     [SugarColumn(IsNullable = true)] public string? ExtraHeaders { get; set; }
     [SugarColumn(IsNullable = true)] public string? ImageSize { get; set; } = "1024x1024";
-    [SugarColumn(IsNullable = true)] public int ImageCount { get; set; } = 1;
+    public int ImageCount { get; set; } = 1;
+    public int LogoAdd { get; set; } = 0;
     public int IsActive { get; set; }
     public int IsHealthy { get; set; }
     [SugarColumn(IsNullable = true)] public string? LastHealthCheck { get; set; }

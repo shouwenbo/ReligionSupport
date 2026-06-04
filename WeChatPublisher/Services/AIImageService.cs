@@ -33,11 +33,12 @@ public class AIImageService
         _httpClient.DefaultRequestHeaders.Clear();
         _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
+        int logoAdd = config?.LogoAdd ?? 0;
         return provider switch
         {
-            "HunyuanImage" => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, ct),
-            "DALLE" => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, ct),
-            _ => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, ct)
+            "HunyuanImage" => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, logoAdd, ct),
+            "DALLE" => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, logoAdd, ct),
+            _ => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, logoAdd, ct)
         };
     }
 
@@ -112,14 +113,15 @@ public class AIImageService
     }
 
     private async Task<byte[]> GenerateViaDalle(string baseUrl, string model,
-        string prompt, string size, int count, CancellationToken ct)
+        string prompt, string size, int count, int logoAdd, CancellationToken ct)
     {
         var body = new
         {
             model,
             prompt,
             n = count,
-            size
+            size,
+            extra_body = new { logo_add = logoAdd }
         };
 
         var content = new StringContent(JsonSerializer.Serialize(body),
