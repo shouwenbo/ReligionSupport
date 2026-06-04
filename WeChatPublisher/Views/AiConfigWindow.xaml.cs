@@ -53,6 +53,9 @@ public partial class AiConfigWindow : Window
                 catch { }
             }
             SelectProvider(CmbImageProvider, _imageConfig.ProviderName);
+            if (!string.IsNullOrWhiteSpace(_imageConfig.ImageSize))
+                SelectByContent(CmbImageSize, _imageConfig.ImageSize);
+            TxtImageCount.Text = _imageConfig.ImageCount.ToString();
         }
     }
 
@@ -61,6 +64,18 @@ public partial class AiConfigWindow : Window
         foreach (ComboBoxItem item in cmb.Items)
         {
             if (item.Tag?.ToString() == name)
+            {
+                cmb.SelectedItem = item;
+                return;
+            }
+        }
+    }
+
+    private static void SelectByContent(ComboBox cmb, string content)
+    {
+        foreach (ComboBoxItem item in cmb.Items)
+        {
+            if (item.Content?.ToString() == content)
             {
                 cmb.SelectedItem = item;
                 return;
@@ -149,8 +164,48 @@ public partial class AiConfigWindow : Window
 
     private async void BtnTestImageAi_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("图像AI测试功能将在Phase 5实现", "提示",
-            MessageBoxButton.OK, MessageBoxImage.Information);
+        var btn = sender as Button;
+        var originalContent = btn?.Content?.ToString();
+        try
+        {
+            if (btn != null) { btn.IsEnabled = false; btn.Content = "测试中..."; }
+
+            var apiKey = PbImageApiKey.Password;
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                MessageBox.Show("请先输入图像API Key", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var provider = (CmbImageProvider.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            var model = TxtImageModel.Text.Trim();
+            var baseUrl = TxtImageBaseUrl.Text.Trim();
+
+            var service = new AIImageService();
+            var imageBytes = await service.GenerateImageAsync(
+                prompt: "生成一张温馨的测试图片：一朵盛开的玫瑰花",
+                provider: provider,
+                baseUrl: baseUrl,
+                model: model,
+                apiKey: apiKey);
+
+            var outputDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Images");
+            Directory.CreateDirectory(outputDir);
+            var filePath = Path.Combine(outputDir, $"test_{DateTime.Now:yyyyMMddHHmmss}.png");
+            await File.WriteAllBytesAsync(filePath, imageBytes);
+
+            MessageBox.Show($"图像生成成功!\n保存至: {filePath}", "测试成功",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"图像生成失败: {ex.Message}", "测试失败",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            if (btn != null) { btn.IsEnabled = true; btn.Content = originalContent ?? "测试"; }
+        }
     }
 
     private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -183,7 +238,9 @@ public partial class AiConfigWindow : Window
 
             _imageConfig.ProviderName = (CmbImageProvider.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "DALLE";
             _imageConfig.BaseUrl = TxtImageBaseUrl.Text.Trim();
-            _imageConfig.ModelName = _imageConfig.ProviderName;
+            _imageConfig.ModelName = TxtImageModel.Text.Trim();
+            _imageConfig.ImageSize = (CmbImageSize.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "1024x1024";
+            _imageConfig.ImageCount = int.TryParse(TxtImageCount.Text, out var ic) ? Math.Max(1, ic) : 1;
 
             if (!string.IsNullOrWhiteSpace(PbImageApiKey.Password))
                 _imageConfig.ApiKeyEncrypted = ConfigEncryptionService.Encrypt(PbImageApiKey.Password);

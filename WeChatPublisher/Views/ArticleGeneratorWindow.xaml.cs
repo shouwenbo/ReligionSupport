@@ -12,6 +12,7 @@ public partial class ArticleGeneratorWindow : Window
     private CancellationTokenSource? _cts;
     private readonly SensitiveWordService _sensitiveService = new();
     private readonly McpService _mcpService = new();
+    private readonly AIImageService _aiImageService = new();
 
     public ArticleGeneratorWindow(int? taskId = null)
     {
@@ -144,7 +145,7 @@ public partial class ArticleGeneratorWindow : Window
 
             var aiService = new AIService(_sensitiveService);
             var promptBuilder = new PromptBuilderService();
-            var agentLoop = new AgentLoop(aiService, _sensitiveService, promptBuilder, AppSettings.Instance, _mcpService);
+            var agentLoop = new AgentLoop(aiService, _sensitiveService, promptBuilder, AppSettings.Instance, _mcpService, _aiImageService);
 
             agentLoop.OnLog += (level, msg) =>
             {
