@@ -77,16 +77,138 @@ public partial class TtsConfigWindow : Window
             if (item.Tag?.ToString() == tag) { cmb.SelectedItem = item; return; }
     }
 
-    private void BtnTestTts_Click(object sender, RoutedEventArgs e)
+    private async void BtnTestTts_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("TTS测试功能需要有效的API配置和音频播放器", "提示",
-            MessageBoxButton.OK, MessageBoxImage.Information);
+        var btn = sender as Button;
+        var orig = btn?.Content?.ToString();
+        try
+        {
+            if (btn != null) { btn.IsEnabled = false; btn.Content = "测试中..."; }
+
+            var config = BuildTtsConfigFromUi();
+            var service = new Services.TtsService(config);
+            var testText = "你好，这是一条语音合成测试。愿你今日平安喜乐。";
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "WeChatPublisher");
+            Directory.CreateDirectory(tempDir);
+            var outputPath = Path.Combine(tempDir, "tts_test.mp3");
+
+            var result = await service.GenerateAudioAsync(testText, outputPath);
+            if (result == null)
+            {
+                MessageBox.Show("语音合成失败，请检查API配置是否正确", "测试失败",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Play the generated audio
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = result,
+                UseShellExecute = true
+            });
+
+            MessageBox.Show($"语音合成成功!\n文件: {result}", "测试成功",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"TTS测试失败: {ex.Message}", "错误",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            if (btn != null) { btn.IsEnabled = true; btn.Content = orig ?? "测试朗读一段"; }
+        }
     }
 
-    private void BtnTestSub_Click(object sender, RoutedEventArgs e)
+    private TtsApiConfig BuildTtsConfigFromUi()
     {
-        MessageBox.Show("字幕测试功能需要有效的API配置和音频文件", "提示",
-            MessageBoxButton.OK, MessageBoxImage.Information);
+        return new TtsApiConfig
+        {
+            ConfigType = "TTS",
+            ApiType = (CmbTtsType.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "WebScrape",
+            BaseUrl = TxtTtsBaseUrl.Text.Trim(),
+            TokenFetchUrl = TxtTtsTokenUrl.Text.Trim(),
+            TokenRegexPattern = TxtTtsTokenRegex.Text.Trim(),
+            GenerateEndpoint = TxtTtsEndpoint.Text.Trim(),
+            SuccessCodeField = TxtTtsSuccessField.Text.Trim(),
+            SuccessCodeValue = TxtTtsSuccessValue.Text.Trim(),
+            DefaultParamsJSON = JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                ["language"] = TxtTtsLanguage.Text,
+                ["voice"] = TxtTtsVoice.Text,
+                ["rate"] = TxtTtsRate.Text,
+                ["pitch"] = TxtTtsPitch.Text,
+                ["kbitrate"] = TxtTtsBitrate.Text
+            })
+        };
+    }
+
+    private async void BtnTestSub_Click(object sender, RoutedEventArgs e)
+    {
+        var btn = sender as Button;
+        var orig = btn?.Content?.ToString();
+        try
+        {
+            if (btn != null) { btn.IsEnabled = false; btn.Content = "测试中..."; }
+
+            // Need an audio file first - generate one with TTS
+            var ttsConfig = BuildTtsConfigFromUi();
+            var tts = new Services.TtsService(ttsConfig);
+            var tempDir = Path.Combine(Path.GetTempPath(), "WeChatPublisher");
+            Directory.CreateDirectory(tempDir);
+            var audioPath = Path.Combine(tempDir, "sub_test.mp3");
+
+            var audioResult = await tts.GenerateAudioAsync("测试字幕生成。今天天气真好。", audioPath);
+            if (audioResult == null)
+            {
+                MessageBox.Show("语音生成失败，无法测试字幕", "测试失败",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var subConfig = new TtsApiConfig
+            {
+                ConfigType = "Subtitle",
+                ApiType = (CmbSubType.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "WebScrape",
+                BaseUrl = TxtSubBaseUrl.Text.Trim(),
+                TokenFetchUrl = TxtSubTokenUrl.Text.Trim(),
+                TokenRegexPattern = TxtSubTokenRegex.Text.Trim(),
+                GenerateEndpoint = TxtSubEndpoint.Text.Trim(),
+                SuccessCodeField = "code",
+                SuccessCodeValue = "200",
+                DefaultParamsJSON = $"{{\"language\":\"{TxtSubLanguage.Text}\"}}"
+            };
+            var sub = new Services.SubtitleService(subConfig);
+            var srtPath = await sub.GenerateSubtitleAsync(audioResult);
+
+            if (srtPath != null && File.Exists(srtPath))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "notepad.exe",
+                    Arguments = srtPath,
+                    UseShellExecute = false
+                });
+                MessageBox.Show($"字幕生成成功!\n{Path.GetFileName(srtPath)}", "测试成功",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("字幕生成失败", "测试失败",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"字幕测试失败: {ex.Message}", "错误",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            if (btn != null) { btn.IsEnabled = true; btn.Content = orig ?? "测试字幕生成"; }
+        }
     }
 
     private void BtnSave_Click(object sender, RoutedEventArgs e)
