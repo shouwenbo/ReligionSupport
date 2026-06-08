@@ -21,7 +21,7 @@ public class SensitiveWord
     public string UpdatedAt { get; set; } = "";
 
     [SugarColumn(IsIgnore = true)]
-    public string StrategyDisplay => Strategy switch { 0 => "直接替换", 1 => "AI意境改写", 2 => "AI自动抉择" };
+    public string StrategyDisplay => Strategy switch { 0 => "直接替换", 1 => "AI意境改写", _ => "AI自动抉择" };
 }
 
 public class SensitiveWordMatch
