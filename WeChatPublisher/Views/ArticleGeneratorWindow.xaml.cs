@@ -33,6 +33,8 @@ public partial class ArticleGeneratorWindow : Window
             AutoScanMcp();
             RefreshAiSummary();
             RefreshPersonaCount();
+            _ = RefreshMaterialsAsync();
+            _ = RefreshVersesAsync();
             if (_taskId.HasValue) LoadExistingTask(_taskId.Value);
         }
         catch (Exception ex)
@@ -80,6 +82,73 @@ public partial class ArticleGeneratorWindow : Window
                     TbSourceSummary.Text = "MCP 扫描失败，将使用纯AI生成");
             }
         });
+    }
+
+    // ========== 素材选择 ==========
+    private void BtnRefreshMaterials_Click(object sender, RoutedEventArgs e)
+        => _ = RefreshMaterialsAsync();
+
+    private async Task RefreshMaterialsAsync()
+    {
+        BtnRefreshMaterials.IsEnabled = false;
+        try
+        {
+            var items = new List<SelectableItem>();
+            var resources = _mcpService.GetAllResources()
+                .Where(r => r.ResourceType == "LocalFolder").ToList();
+            if (resources.Count > 0)
+            {
+                var samples = _mcpService.SampleFiles(resources[0].Id, 20, 300, bypassCache: true);
+                foreach (var s in samples)
+                    items.Add(new SelectableItem
+                    {
+                        Display = $"[{s.FileName}] {s.Content[..Math.Min(s.Content.Length, 60)]}...",
+                        Data = s.FullContent,
+                        IsSelected = false
+                    });
+            }
+            LbMaterials.ItemsSource = items;
+        }
+        catch (Exception ex) { Logger.Warn($"刷新素材失败: {ex.Message}"); }
+        finally { BtnRefreshMaterials.IsEnabled = true; }
+    }
+
+    private void BtnRefreshVerses_Click(object sender, RoutedEventArgs e)
+        => _ = RefreshVersesAsync();
+
+    private async Task RefreshVersesAsync()
+    {
+        BtnRefreshVerses.IsEnabled = false;
+        try
+        {
+            var items = new List<SelectableItem>();
+            var biblePath = AppSettings.Instance.BibleDbPath;
+            if (File.Exists(biblePath))
+            {
+                var bible = new BibleService(biblePath);
+                var rng = new Random();
+                for (int i = 0; i < 10; i++)
+                {
+                    var volume = rng.Next(1, 67);
+                    var chapter = rng.Next(1, Math.Min(bible.GetChapterCount(volume), 50));
+                    try
+                    {
+                        var verse = bible.QueryVerses($"{volume}:{chapter}", 4);
+                        if (verse.Length > 5)
+                            items.Add(new SelectableItem
+                            {
+                                Display = $"{verse[..Math.Min(verse.Length, 80)]}",
+                                Data = verse,
+                                IsSelected = false
+                            });
+                    }
+                    catch { }
+                }
+            }
+            LbVerses.ItemsSource = items;
+        }
+        catch (Exception ex) { Logger.Warn($"刷新经文失败: {ex.Message}"); }
+        finally { BtnRefreshVerses.IsEnabled = true; }
     }
 
     private void RefreshPersonaCount()
@@ -221,6 +290,16 @@ public partial class ArticleGeneratorWindow : Window
         var style = (CmbStyle.SelectedItem as ComboBoxItem)?.Content?.ToString();
         context.ArticleStyle = style ?? "AI自动选择";
         context.State["article_style"] = context.ArticleStyle;
+
+        // 合并用户勾选的素材 + 经文作为源文本
+        var selectedSources = new List<string>();
+        if (LbMaterials.ItemsSource is List<SelectableItem> materials)
+            selectedSources.AddRange(materials.Where(m => m.IsSelected).Select(m => m.Data));
+        if (LbVerses.ItemsSource is List<SelectableItem> verses)
+            selectedSources.AddRange(verses.Where(v => v.IsSelected).Select(v => v.Data));
+
+        if (selectedSources.Count > 0)
+            context.SourceText = string.Join("\n\n---\n\n", selectedSources);
 
         // MCP资源ID存入context供Agent使用
         if (CmbMcpResource.SelectedItem is ComboBoxItem item && item.Tag is int resId)
@@ -384,4 +463,11 @@ public partial class ArticleGeneratorWindow : Window
             TbProgress.Text = "已复制到剪贴板";
         }
     }
+}
+
+public class SelectableItem
+{
+    public string Display { get; set; } = "";
+    public string Data { get; set; } = "";
+    public bool IsSelected { get; set; }
 }

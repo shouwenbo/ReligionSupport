@@ -23,6 +23,13 @@ public class BibleService
         });
     }
 
+    public int GetChapterCount(int volumeSn)
+    {
+        using var db = GetDb();
+        return db.Queryable<Models.BibleID>()
+            .Where(b => b.SN == volumeSn).Select(b => b.ChapterNumber).First() + 1;
+    }
+
     public string QueryVerses(string reference, int format = 1)
     {
         using var db = GetDb();
