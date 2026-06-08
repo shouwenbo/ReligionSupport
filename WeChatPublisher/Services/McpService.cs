@@ -184,6 +184,23 @@ public class McpService
     }
 
     // ========== 工具方法 ==========
+    private static readonly string[] DocxPasswords = ["43404", "0314", "12000", "144000"];
+
+    private static Xceed.Words.NET.DocX? TryOpenDocx(string filePath)
+    {
+        try { return Xceed.Words.NET.DocX.Load(filePath); }
+        catch
+        {
+            foreach (var pw in DocxPasswords)
+            {
+                // TODO: Upgrade Xceed.Words.NET to >=5.1 for password-protected docx
+                try { return Xceed.Words.NET.DocX.Load(filePath); }
+                catch { }
+            }
+            return null;
+        }
+    }
+
     private static string? ReadFileContent(string filePath)
     {
         try
@@ -191,7 +208,8 @@ public class McpService
             var ext = Path.GetExtension(filePath).ToLowerInvariant();
             if (ext == ".docx")
             {
-                using var doc = Xceed.Words.NET.DocX.Load(filePath);
+                using var doc = TryOpenDocx(filePath);
+                if (doc == null) return null;
                 return string.Join("\n", doc.Paragraphs.Select(p => p.Text).Where(t => !string.IsNullOrWhiteSpace(t)));
             }
             if (ext is ".txt" or ".md" or ".html" or ".htm")
@@ -381,11 +399,29 @@ public class DocxTemplateService
         doc.SaveAs(outputPath);
     }
 
+    private static readonly string[] DocxPasswords = ["43404", "0314", "12000", "144000"];
+
+    private static Xceed.Words.NET.DocX? TryOpenDocx(string filePath)
+    {
+        try { return Xceed.Words.NET.DocX.Load(filePath); }
+        catch
+        {
+            foreach (var pw in DocxPasswords)
+            {
+                // TODO: Upgrade Xceed.Words.NET to >=5.1 for password-protected docx
+                try { return Xceed.Words.NET.DocX.Load(filePath); }
+                catch { }
+            }
+            return null;
+        }
+    }
+
     public static ParsedDocx? ParseArticleDocx(string filePath)
     {
         try
         {
-            using var doc = Xceed.Words.NET.DocX.Load(filePath);
+            using var doc = TryOpenDocx(filePath);
+            if (doc == null) return null;
             var paragraphs = doc.Paragraphs.Select(p => p.Text.Trim())
                 .Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
             var text = string.Join("\n", paragraphs);
