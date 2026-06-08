@@ -34,16 +34,14 @@ public class McpService
         if (!Directory.Exists(resource.Path)) return [];
 
         var filter = string.IsNullOrWhiteSpace(resource.FileFilter) ? "*.*" : resource.FileFilter;
-        var patterns = filter.Split(';', StringSplitOptions.RemoveEmptyEntries);
-        var allFiles = new List<string>();
-        foreach (var p in patterns)
-            allFiles.AddRange(Directory.GetFiles(resource.Path, p.Trim(), SearchOption.AllDirectories));
+        var allFiles = SafeEnumerateFiles(resource.Path, filter, maxFiles);
 
         var supported = allFiles
             .Where(f =>
             {
                 var ext = Path.GetExtension(f).ToLowerInvariant();
-                return ext is ".docx" or ".txt" or ".md" or ".pdf" or ".html" or ".htm";
+                return ext is ".docx" or ".txt" or ".md" or ".pdf" or ".html" or ".htm"
+                    or ".jpg" or ".jpeg" or ".png" or ".webp" or ".bmp" or ".gif";
             })
             .Take(maxFiles)
             .ToList();
@@ -227,6 +225,61 @@ public class McpService
         }
         catch { }
         return items;
+    }
+
+    private static readonly HashSet<string> _skipFolders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "$RECYCLE.BIN", "System Volume Information", "Windows", "Program Files",
+        "Program Files (x86)", "ProgramData", "Recovery", "Config.Msi",
+        "node_modules", ".git", "obj", "bin", ".vs"
+    };
+
+    private static List<string> SafeEnumerateFiles(string root, string filter, int maxFiles)
+    {
+        var results = new List<string>();
+        var patterns = filter.Split(';', StringSplitOptions.RemoveEmptyEntries);
+
+        try
+        {
+            var dirs = new Queue<string>();
+            dirs.Enqueue(root);
+
+            while (dirs.Count > 0 && results.Count < maxFiles * 3)
+            {
+                var dir = dirs.Dequeue();
+                var dirName = Path.GetFileName(dir);
+
+                if (_skipFolders.Contains(dirName) || (dirName.StartsWith("$") && dirName.Length > 1))
+                    continue;
+
+                try
+                {
+                    foreach (var pattern in patterns)
+                    {
+                        try
+                        {
+                            results.AddRange(Directory.GetFiles(dir, pattern.Trim(),
+                                SearchOption.TopDirectoryOnly));
+                        }
+                        catch (UnauthorizedAccessException) { }
+                        catch (DirectoryNotFoundException) { }
+                    }
+
+                    foreach (var sub in Directory.GetDirectories(dir))
+                    {
+                        try { dirs.Enqueue(sub); }
+                        catch (UnauthorizedAccessException) { }
+                        catch (DirectoryNotFoundException) { }
+                    }
+                }
+                catch (UnauthorizedAccessException) { }
+                catch (DirectoryNotFoundException) { }
+            }
+        }
+        catch (UnauthorizedAccessException) { }
+        catch (DirectoryNotFoundException) { }
+
+        return results;
     }
 
     public string ReadTextFile(string filePath) => File.ReadAllText(filePath);
