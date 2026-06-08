@@ -2,6 +2,7 @@ namespace WeChatPublisher.Models;
 
 public class AgentTask
 {
+    [SqlSugar.SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
     public int Id { get; set; }
     public string TaskType { get; set; } = "article";
     public string Status { get; set; } = "pending";
@@ -17,6 +18,7 @@ public class AgentTask
 
 public class AgentStepLog
 {
+    [SqlSugar.SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
     public int Id { get; set; }
     public int TaskId { get; set; }
     public int Round { get; set; }
