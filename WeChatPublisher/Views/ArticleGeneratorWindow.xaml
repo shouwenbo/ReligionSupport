@@ -95,6 +95,12 @@
                                    Foreground="#888" VerticalAlignment="Center"/>
                         <ProgressBar x:Name="PbProgress" Width="200" Height="10"
                                      Margin="12,0,0,0" Minimum="0" Maximum="100" Value="0"/>
+                        <Button x:Name="BtnLearn" Content="审核完成 ✓" Width="100" Height="26"
+                                FontSize="11" Margin="20,0,0,0"
+                                Style="{StaticResource PrimaryButton}" Background="#6c5ce7"
+                                Click="BtnLearn_Click" ToolTip="对比修改后学习你的写作风格"/>
+                        <TextBlock x:Name="TbLearnCount" Text="" FontSize="11"
+                                   Foreground="#6c5ce7" Margin="10,0,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
                     <TextBox Grid.Row="1" x:Name="TbOutput" TextWrapping="Wrap"
                              AcceptsReturn="True" VerticalScrollBarVisibility="Visible"

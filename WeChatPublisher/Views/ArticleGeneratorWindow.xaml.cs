@@ -32,6 +32,7 @@ public partial class ArticleGeneratorWindow : Window
         {
             AutoScanMcp();
             RefreshAiSummary();
+            RefreshPersonaCount();
             if (_taskId.HasValue) LoadExistingTask(_taskId.Value);
         }
         catch (Exception ex)
@@ -79,6 +80,18 @@ public partial class ArticleGeneratorWindow : Window
                     TbSourceSummary.Text = "MCP 扫描失败，将使用纯AI生成");
             }
         });
+    }
+
+    private void RefreshPersonaCount()
+    {
+        try
+        {
+            var learner = new StyleLearningService();
+            var persona = learner.GetOrCreatePersona("article");
+            if (persona.EditCount > 0)
+                TbLearnCount.Text = $"已学习 {persona.EditCount} 次";
+        }
+        catch { }
     }
 
     private void RefreshAiSummary()
@@ -146,11 +159,11 @@ public partial class ArticleGeneratorWindow : Window
 
             if (result.FinalText != null)
             {
+                _lastGeneratedText = result.FinalText;
                 TbOutput.Text = result.FinalText;
                 TbSanitized.Text = _sensitiveService.Sanitize(result.FinalText);
                 PbProgress.Value = 100;
-                TbProgress.Text = "生成完成!";
-                TabOutput.SelectedIndex = 1;
+                TbProgress.Text = "生成完成! 请在【AI生成】标签中修改，修改后点击【审核完成】";
             }
         }
         catch (OperationCanceledException)
@@ -192,6 +205,67 @@ public partial class ArticleGeneratorWindow : Window
     }
 
     private void BtnStop_Click(object sender, RoutedEventArgs e) => _cts?.Cancel();
+
+    private string? _lastGeneratedText; // 保存原始AI生成文本用于对比
+
+    private async void BtnLearn_Click(object sender, RoutedEventArgs e)
+    {
+        // 用户编辑的是 TbOutput 文本框内容，对比 _lastGeneratedText
+        var edited = TbOutput.Text;
+        if (string.IsNullOrWhiteSpace(_lastGeneratedText) || string.IsNullOrWhiteSpace(edited))
+        {
+            MessageBox.Show("请先生成文章，然后修改内容后再点击审核", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        if (_lastGeneratedText == edited)
+        {
+            MessageBox.Show("内容未修改，无需审核", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        BtnLearn.IsEnabled = false;
+        BtnLearn.Content = "分析中...";
+        try
+        {
+            var learner = new StyleLearningService();
+            var result = await learner.AnalyzeEditsAsync(
+                _lastGeneratedText, edited, "article", CancellationToken.None);
+
+            _lastGeneratedText = edited; // 更新基准
+
+            // 更新学习次数显示
+            var persona = learner.GetOrCreatePersona("article");
+            TbLearnCount.Text = $"已学习 {persona.EditCount} 次";
+
+            // 反馈结果
+            var msg = result.Summary.Length > 0 ? result.Summary : "已学习你的编辑风格";
+
+            if (result.DiscoveredWords.Count > 0)
+            {
+                var words = result.DiscoveredWords.Take(3)
+                    .Select(w => $"{w.SourceWord}→{w.Replacement}");
+                msg += $"\n\n发现潜在敏感词: {string.Join(", ", words)}\n可在敏感词知识库中查看和管理。";
+            }
+
+            if (result.StylePatterns.Count > 0)
+                msg += $"\n\n学到 {result.StylePatterns.Count} 个写作风格模式。下次生成将更贴近你的风格。";
+
+            MessageBox.Show(msg, "风格学习完成",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"学习失败: {ex.Message}", "错误",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            BtnLearn.IsEnabled = true;
+            BtnLearn.Content = "审核完成 ✓";
+        }
+    }
 
     private void BtnSaveDraft_Click(object sender, RoutedEventArgs e)
     {

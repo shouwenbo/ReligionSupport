@@ -26,6 +26,12 @@ public class GenerateTextStep : IAgentStep
 
         var systemPrompt = _prompt.GetSystemPrompt(context.TaskType);
 
+        // 注入学到的作者风格
+        var learner = new StyleLearningService();
+        var personaInjection = learner.BuildPersonaInjection(context.TaskType);
+        if (personaInjection.Length > 0)
+            systemPrompt += "\n\n" + personaInjection;
+
         var result = await _ai.GenerateTextAsync(systemPrompt, prompt, context.Temperature, ct);
 
         context.State["generated_text"] = result;

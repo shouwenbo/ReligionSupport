@@ -46,6 +46,8 @@ public class DbService
             typeof(McpResourceConfig),
             typeof(McpCacheEntry),
             typeof(PromptTemplate),
+            typeof(AuthorPersona),
+            typeof(EditSession),
             typeof(ArticleDraft),
             typeof(VideoDraft),
             typeof(PublishRecord),
