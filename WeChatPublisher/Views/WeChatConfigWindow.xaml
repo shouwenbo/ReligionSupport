@@ -8,6 +8,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- 账号列表 -->
@@ -99,8 +100,11 @@
             </Grid>
         </GroupBox>
 
+        <!-- 状态提示 -->
+        <TextBlock Grid.Row="2" x:Name="TbStatusText" Text="就绪" FontSize="12" Foreground="Gray" Margin="0,6,0,0"/>
+
         <!-- 底部按钮 -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
             <Button Content="保存账号" Width="90" Style="{StaticResource PrimaryButton}" Click="BtnSave_Click"/>
             <Button Content="自测全部" Width="80" Margin="10,0,0,0" Click="BtnHealthCheckAll_Click"/>
             <Button Content="关闭" Width="60" Margin="10,0,0,0" Click="BtnCancel_Click"/>

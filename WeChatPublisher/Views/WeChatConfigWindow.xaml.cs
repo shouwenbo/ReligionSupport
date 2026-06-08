@@ -19,8 +19,15 @@ public partial class WeChatConfigWindow : Window
         Loaded += (_, _) => RefreshList();
     }
 
+    private void SetStatus(string msg, bool isError = false)
+    {
+        TbStatusText.Text = $"[{DateTime.Now:HH:mm:ss}] {msg}";
+        TbStatusText.Foreground = isError ? new SolidColorBrush(Colors.Red) : new SolidColorBrush(Colors.Gray);
+    }
+
     private void RefreshList()
     {
+        DgAccounts.ItemsSource = null;
         DgAccounts.ItemsSource = AppSettings.Instance.GetAllWeChatConfigs();
     }
 
@@ -57,33 +64,62 @@ public partial class WeChatConfigWindow : Window
         TbHealthTime.Text = cfg.LastHealthCheck ?? "";
     }
 
+    private static int GetIdFromSender(object sender)
+    {
+        if (sender is Button btn && btn.Tag != null)
+        {
+            if (btn.Tag is int id) return id;
+            if (btn.Tag is string s && int.TryParse(s, out var sid)) return sid;
+        }
+        return 0;
+    }
+
     private void BtnSwitch_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string idStr && int.TryParse(idStr, out var id))
-        {
-            AppSettings.Instance.SetActiveWeChatAccount(id);
-            RefreshList();
-        }
+        var id = GetIdFromSender(sender);
+        if (id == 0) return;
+        AppSettings.Instance.SetActiveWeChatAccount(id);
+        RefreshList();
+        SetStatus("已切换当前账号");
     }
 
     private async void BtnHealthCheck_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string idStr && int.TryParse(idStr, out var id))
+        var id = GetIdFromSender(sender);
+        if (id == 0) return;
+
+        var btn = sender as Button;
+        var orig = btn?.Content?.ToString();
+        try
         {
+            if (btn != null) { btn.IsEnabled = false; btn.Content = "检测中..."; }
             await RunHealthCheck(id);
             RefreshList();
+        }
+        finally
+        {
+            if (btn != null) { btn.IsEnabled = true; btn.Content = orig ?? "自测"; }
         }
     }
 
     private async void BtnHealthCheckAll_Click(object sender, RoutedEventArgs e)
     {
-        var accounts = AppSettings.Instance.GetAllWeChatConfigs();
-        foreach (var acc in accounts)
+        var btn = sender as Button;
+        var orig = btn?.Content?.ToString();
+        try
         {
-            if (!string.IsNullOrWhiteSpace(acc.AppId))
+            if (btn != null) { btn.IsEnabled = false; btn.Content = "检测中..."; }
+            var accounts = AppSettings.Instance.GetAllWeChatConfigs()
+                .Where(a => !string.IsNullOrWhiteSpace(a.AppId)).ToList();
+            foreach (var acc in accounts)
                 await RunHealthCheck(acc.Id);
+            RefreshList();
+            SetStatus($"自测完成: {accounts.Count} 个账号");
         }
-        RefreshList();
+        finally
+        {
+            if (btn != null) { btn.IsEnabled = true; btn.Content = orig ?? "自测全部"; }
+        }
     }
 
     private async Task RunHealthCheck(int accountId)
@@ -112,14 +148,19 @@ public partial class WeChatConfigWindow : Window
 
     private void BtnDeleteAccount_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string idStr && int.TryParse(idStr, out var id))
+        var id = GetIdFromSender(sender);
+        if (id == 0) return;
+
+        var cfg = AppSettings.Instance.GetAllWeChatConfigs().FirstOrDefault(c => c.Id == id);
+        var name = cfg?.AccountName ?? "此账号";
+
+        if (MessageBox.Show($"确定删除账号「{name}」?\n此操作不可恢复。", "确认删除",
+            MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
         {
-            if (MessageBox.Show("确定删除此账号?", "确认", MessageBoxButton.YesNo,
-                MessageBoxImage.Question) == MessageBoxResult.Yes)
-            {
-                AppSettings.Instance.DeleteWeChatConfig(id);
-                RefreshList();
-            }
+            AppSettings.Instance.DeleteWeChatConfig(id);
+            if (_editingId == id) { _editingId = 0; ClearForm(); }
+            RefreshList();
+            SetStatus($"已删除: {name}");
         }
     }
 
@@ -196,10 +237,11 @@ public partial class WeChatConfigWindow : Window
         }
 
         AppSettings.Instance.SaveWeChatConfig(cfg);
+        var isUpdate = _editingId > 0;
         _editingId = 0;
         ClearForm();
         RefreshList();
-        MessageBox.Show("账号已保存", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+        SetStatus(isUpdate ? "账号已更新" : "账号已添加");
     }
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e) => Close();
