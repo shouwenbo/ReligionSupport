@@ -90,8 +90,17 @@
                 <Label Grid.Row="5" Grid.Column="0" Content="默认标签:"/>
                 <TextBox Grid.Row="5" Grid.Column="1" x:Name="TxtDefaultTags" Margin="0,2"/>
 
-                <Label Grid.Row="6" Grid.Column="0" Content="健康状态:"/>
-                <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Margin="0,4">
+                <Label Grid.Row="6" Grid.Column="0" Content="联系方式图:"/>
+                <Grid Grid.Row="6" Grid.Column="1" Margin="0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/><ColumnDefinition Width="80"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TxtContactImage" Grid.Column="0"/>
+                    <Button Grid.Column="1" Content="浏览..." Width="75" Click="BtnBrowseContact_Click"/>
+                </Grid>
+
+                <Label Grid.Row="7" Grid.Column="0" Content="健康状态:"/>
+                <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,4">
                     <Ellipse x:Name="ElHealth" Width="16" Height="16" Fill="Gray"/>
                     <TextBlock x:Name="TbHealthMsg" Text="未检测" Margin="8,0,0,0" VerticalAlignment="Center"/>
                     <TextBlock x:Name="TbHealthTime" Text="" Margin="8,0,0,0" VerticalAlignment="Center"

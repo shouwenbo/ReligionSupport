@@ -312,20 +312,57 @@ public partial class ArticleGeneratorWindow : Window
             MessageBox.Show("没有可发布的内容", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
+
+        var wechatCfg = AppSettings.Instance.GetActiveWeChatConfig();
+        var contactImage = wechatCfg?.ContactImage;
+        if (string.IsNullOrWhiteSpace(contactImage) || !File.Exists(contactImage))
+            contactImage = null;
+
+        BtnPublish.IsEnabled = false;
+        BtnPublish.Content = "排版发布中...";
         try
         {
+            // 1. 智能排版
+            var layout = new LayoutService();
+            var learner = new StyleLearningService();
+            var persona = learner.BuildPersonaInjection("article");
+            var formatted = await layout.FormatArticleAsync(text, "article",
+                persona, null, contactImage);
+
+            // 2. 提取标题
+            var title = "AI生成文章";
+            var titleMatch = System.Text.RegularExpressions.Regex.Match(
+                text, @"^#+\s*(.+)", System.Text.RegularExpressions.RegexOptions.Multiline);
+            if (titleMatch.Success && titleMatch.Groups[1].Value.Length > 0)
+                title = titleMatch.Groups[1].Value.Trim();
+
+            // 3. 发布
             var wechatService = new WeChatService();
-            var draft = new ArticleDraft { Title = "AI生成文章", Content = text, Status = "published" };
+            var draft = new ArticleDraft
+            {
+                Title = title,
+                Content = formatted,
+                Status = "published",
+                CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+            };
             var mediaId = await wechatService.CreateDraftAsync(draft);
             draft.MediaId = mediaId;
-            draft.UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             AppSettings.Instance.Db.ExecuteInScope(db => db.Insertable(draft).ExecuteCommand());
-            MessageBox.Show($"已发布到公众号草稿箱! MediaId: {mediaId}", "成功",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+
+            var contactMsg = contactImage != null ? "(含联系方式)" : "";
+            MessageBox.Show($"已发布到公众号草稿箱!{contactMsg}\n标题: {title}\nMediaId: {mediaId}",
+                "发布成功", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
+            Logger.Error("发布失败", ex);
             MessageBox.Show($"发布失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            BtnPublish.IsEnabled = true;
+            BtnPublish.Content = "发布到公众号";
         }
     }
 

@@ -40,6 +40,7 @@ public partial class WeChatConfigWindow : Window
         CbPublishAsDraft.IsChecked = cfg.PublishAsDraft == 1;
         CbAutoSanitize.IsChecked = cfg.AutoSanitize == 1;
         TxtDefaultTags.Text = cfg.DefaultTags ?? "";
+        TxtContactImage.Text = cfg.ContactImage ?? "";
 
         if (cfg.AppSecretEncrypted != null)
         {
@@ -164,6 +165,17 @@ public partial class WeChatConfigWindow : Window
         }
     }
 
+    private void BtnBrowseContact_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "图片文件|*.png;*.jpg;*.jpeg;*.gif|所有文件|*.*",
+            InitialDirectory = @"F:\传道 & 公众号文案\扫码关注设计"
+        };
+        if (dialog.ShowDialog() == true)
+            TxtContactImage.Text = dialog.FileName;
+    }
+
     private void BtnShowSecret_Click(object sender, RoutedEventArgs e)
     {
         if (PbAppSecret.Password.Length > 0)
@@ -221,6 +233,7 @@ public partial class WeChatConfigWindow : Window
             PublishAsDraft = CbPublishAsDraft.IsChecked == true ? 1 : 0,
             AutoSanitize = CbAutoSanitize.IsChecked == true ? 1 : 0,
             DefaultTags = TxtDefaultTags.Text.Trim(),
+            ContactImage = TxtContactImage.Text.Trim(),
             IsActive = 1,
             SortOrder = _editingId == 0 ? AppSettings.Instance.GetAllWeChatConfigs().Count : 0
         };

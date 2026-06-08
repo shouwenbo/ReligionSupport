@@ -241,10 +241,12 @@ public class AppSettings
 
         _dbService.ExecuteInScope(db => db.Insertable(new WeChatConfig
         {
+            AccountName = "爱与祝福同行",
             AppId = "",
             ApiBaseUrl = "https://api.weixin.qq.com",
             PublishAsDraft = 1,
             AutoSanitize = 1,
+            ContactImage = @"F:\传道 & 公众号文案\扫码关注设计\爱与祝福同行二维码设计 - 我每天喜乐.png",
             IsActive = 1,
             CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")

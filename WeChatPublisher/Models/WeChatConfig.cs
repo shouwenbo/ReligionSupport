@@ -15,6 +15,9 @@ public class WeChatConfig
     public int PublishAsDraft { get; set; } = 1;
     public int AutoSanitize { get; set; } = 1;
     [SugarColumn(IsNullable = true)] public string? DefaultTags { get; set; }
+    /// <summary>联系方式图片路径(插入文章末尾)</summary>
+    [SugarColumn(IsNullable = true)] public string? ContactImage { get; set; }
+    [SugarColumn(IsNullable = true)] public string? CoverPrompt { get; set; }
     public int IsActive { get; set; }
     public int SortOrder { get; set; }
     public int IsHealthy { get; set; }
