@@ -33,7 +33,7 @@ public class AnalyzeSourceStep : IAgentStep
                 // 1. 扫描最多3个资源，每个采样10个文件预览
                 var allFiles = new List<FileSample>();
                 foreach (var res in resources.Take(3))
-                    allFiles.AddRange(_mcp.SampleFiles(res.Id, 10, 500, bypassCache: false));
+                    allFiles.AddRange(_mcp.SampleFiles(res.Id, 30, 500, bypassCache: false));
 
                 if (allFiles.Count > 0)
                 {

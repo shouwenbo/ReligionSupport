@@ -27,9 +27,9 @@ public class AgentLoop
             new GenerateTextStep(aiService, promptBuilder, this),
             new GenerateImageStep(aiImageService!, mcpService),
             new SensitiveCheckStep(sensitiveService),
-            new ReviewStep(),
             new ReviseStep(aiService),
-            new FinalizeStep(sensitiveService)
+            new FinalizeStep(sensitiveService),
+            new ReviewStep()
         ];
     }
 
