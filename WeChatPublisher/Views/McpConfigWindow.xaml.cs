@@ -93,7 +93,7 @@ public partial class McpConfigWindow : Window
             Log($"=== 测试资源: {resource.Name} ===");
             Log($"类型: {resource.ResourceType}, 路径: {resource.Path}");
 
-            var samples = _mcpService.SampleFiles(id, maxFiles: 5, sampleChars: 200);
+            var samples = _mcpService.SampleFiles(id, maxFiles: 5, sampleChars: 200, bypassCache: true);
             if (samples.Count == 0)
             {
                 Log("未找到任何文件");

@@ -14,14 +14,15 @@ public class McpService
     public void DeleteResource(int id) => _settings.DeleteMcpResource(id);
 
     // ========== 智能采样（带缓存） ==========
-    public List<FileSample> SampleFiles(int resourceId, int maxFiles = 20, int sampleChars = 500)
+    public List<FileSample> SampleFiles(int resourceId, int maxFiles = 20, int sampleChars = 500,
+        bool bypassCache = false)
     {
         var resource = GetAllResources().FirstOrDefault(r => r.Id == resourceId);
         if (resource == null) return [];
 
         return resource.ResourceType switch
         {
-            "LocalFolder" or "NetworkShare" => SampleLocalFiles(resource, maxFiles, sampleChars),
+            "LocalFolder" or "NetworkShare" => SampleLocalFiles(resource, maxFiles, sampleChars, bypassCache),
             "WebUrl" => SampleWebUrl(resource, sampleChars),
             "RssFeed" => SampleRssFeed(resource, maxFiles, sampleChars),
             _ => []
@@ -29,12 +30,13 @@ public class McpService
     }
 
     // ========== 本地文件采样 + 缓存 ==========
-    private List<FileSample> SampleLocalFiles(McpResourceConfig resource, int maxFiles, int sampleChars)
+    private List<FileSample> SampleLocalFiles(McpResourceConfig resource, int maxFiles, int sampleChars,
+        bool bypassCache = false)
     {
         if (!Directory.Exists(resource.Path)) return [];
 
         var filter = string.IsNullOrWhiteSpace(resource.FileFilter) ? "*.*" : resource.FileFilter;
-        var allFiles = SafeEnumerateFiles(resource.Path, filter, maxFiles);
+        var allFiles = SafeEnumerateFiles(resource.Path, filter, maxFiles * 10);
 
         var supported = allFiles
             .Where(f =>
@@ -43,11 +45,14 @@ public class McpService
                 return ext is ".docx" or ".txt" or ".md" or ".pdf" or ".html" or ".htm"
                     or ".jpg" or ".jpeg" or ".png" or ".webp" or ".bmp" or ".gif";
             })
-            .Take(maxFiles)
             .ToList();
 
-        // 读取缓存
-        var cached = _settings.Db.ExecuteInScope(db =>
+        // 随机打乱，避免每次返回同样的文件
+        var rng = new Random();
+        supported = supported.OrderBy(_ => rng.Next()).Take(maxFiles).ToList();
+
+        // 读取缓存（bypassCache 时跳过缓存，总是重新读取）
+        var cached = bypassCache ? [] : _settings.Db.ExecuteInScope(db =>
             db.Queryable<McpCacheEntry>()
               .Where(c => c.ResourceId == resource.Id)
               .ToList());
@@ -63,8 +68,9 @@ public class McpService
             var lastMod = fileInfo.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss");
             var size = fileInfo.Length;
 
-            // 缓存命中：文件未变化
-            if (cacheDict.TryGetValue(file, out var entry)
+            // 缓存命中：文件未变化（且未跳过缓存）
+            if (!bypassCache
+                && cacheDict.TryGetValue(file, out var entry)
                 && entry.FileSize == size
                 && entry.LastModified == lastMod
                 && entry.ContentSample != null)
