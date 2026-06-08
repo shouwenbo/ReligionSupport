@@ -48,6 +48,28 @@ public class AnalyzeSourceStep : IAgentStep
 
                         if (!string.IsNullOrWhiteSpace(merged))
                         {
+                            // 4. 从生活素材中提炼灵修主题
+                            try
+                            {
+                                var themePrompt = $"""
+                                    请从以下生活记录/日记片段中，提炼出可用于信仰灵修文章的核心主题。
+                                    不要照搬原文细节，只提炼抽象的灵修主题和信仰感悟。
+                                    输出格式：每行一个主题，如"感恩日常的陪伴"、"在愤怒中学会饶恕"。
+                                    最多5个主题。
+
+                                    {merged[..Math.Min(merged.Length, 3000)]}
+                                    """;
+
+                                var themes = await _ai.GenerateTextAsync(
+                                    "你是一位灵修导师，擅长从日常琐事中看见信仰的光芒。",
+                                    themePrompt, 0.3, ct);
+
+                                context.State["spiritual_themes"] = themes;
+                                context.State["source_is_raw_journal"] = "true";
+                                Logger.Info($"灵修主题提炼完成: {themes[..Math.Min(themes.Length, 100)]}");
+                            }
+                            catch { }
+
                             sourceText = merged;
                             context.SourceText = merged;
                             context.State["sampled_files"] = string.Join(", ",
