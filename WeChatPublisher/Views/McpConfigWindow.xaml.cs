@@ -76,6 +76,57 @@ public partial class McpConfigWindow : Window
         }
     }
 
+    private async void BtnTestResource_Click(object sender, RoutedEventArgs e)
+    {
+        var id = GetIdFromSender(sender);
+        if (id == 0) return;
+
+        var btn = sender as Button;
+        var orig = btn?.Content?.ToString();
+        try
+        {
+            if (btn != null) { btn.IsEnabled = false; btn.Content = "..."; }
+
+            var resource = _mcpService.GetAllResources().FirstOrDefault(r => r.Id == id);
+            if (resource == null) { Log("资源不存在"); return; }
+
+            Log($"=== 测试资源: {resource.Name} ===");
+            Log($"类型: {resource.ResourceType}, 路径: {resource.Path}");
+
+            var samples = _mcpService.SampleFiles(id, maxFiles: 5, sampleChars: 200);
+            if (samples.Count == 0)
+            {
+                Log("未找到任何文件");
+                return;
+            }
+
+            Log($"共发现文件样本: {samples.Count} 个");
+            foreach (var s in samples)
+            {
+                var cached = s.IsCached ? "[缓存]" : "[新鲜]";
+                Log($"  {cached} {s.FileName}");
+                Log($"    预览: {s.Content[..Math.Min(s.Content.Length, 100)]}...");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"测试失败: {ex.Message}");
+        }
+        finally
+        {
+            if (btn != null) { btn.IsEnabled = true; btn.Content = orig ?? "测试"; }
+        }
+    }
+
+    private void Log(string msg)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            TbLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\n");
+            TbLog.ScrollToEnd();
+        });
+    }
+
     private void BtnBrowseResPath_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new System.Windows.Forms.FolderBrowserDialog();

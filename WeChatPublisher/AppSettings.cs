@@ -185,21 +185,34 @@ public class AppSettings
         var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         var defaults = new List<McpResourceConfig>
         {
+            // 文章素材 - 优先AI生成，这些是AI的参考源
+            new() { Name = "F盘-全部文档", ResourceType = "LocalFolder",
+                     Path = @"F:\", FileFilter = "*.docx;*.txt;*.md",
+                     Description = "F盘全局文档索引，作为AI文章生成的参考素材",
+                     CreatedAt = now, UpdatedAt = now },
             new() { Name = "公众号文案", ResourceType = "LocalFolder",
                      Path = GetJsonValue("Defaults:OutputArticleRoot"),
-                     FileFilter = "*.docx", Description = "公众号文案输出目录",
+                     FileFilter = "*.docx", Description = "已发布的公众号文案存档",
                      CreatedAt = now, UpdatedAt = now },
-            new() { Name = "读经感悟", ResourceType = "LocalFolder",
-                     Path = @"F:\个人 & 文档\读经感悟",
-                     FileFilter = "*.txt", Description = "读经感悟笔记",
-                     CreatedAt = now, UpdatedAt = now },
-            new() { Name = "插图素材", ResourceType = "LocalFolder",
+            // 图片素材 - 仅作AI失败时的后备
+            new() { Name = "美图素材(后备)", ResourceType = "LocalFolder",
                      Path = @"F:\传道 & 美图\插图素材",
-                     FileFilter = "*.jpg;*.jpeg;*.png", Description = "文章配图素材库",
+                     FileFilter = "*.jpg;*.jpeg;*.png;*.webp",
+                     Description = "AI图像生成失败时作为后备配图",
                      CreatedAt = now, UpdatedAt = now },
+            // 视频素材
             new() { Name = "视频号输出", ResourceType = "LocalFolder",
                      Path = GetJsonValue("Defaults:OutputVideoRoot"),
-                     FileFilter = "*.mp4", Description = "短视频输出目录",
+                     FileFilter = "*.mp4;*.mov", Description = "短视频输出目录",
+                     CreatedAt = now, UpdatedAt = now },
+            // 网络资源
+            new() { Name = "每日灵粮(RSS)", ResourceType = "RssFeed",
+                     Path = "https://www.todaydevotional.com/rss",
+                     FileFilter = "", Description = "每日灵修文章RSS订阅",
+                     CreatedAt = now, UpdatedAt = now },
+            new() { Name = "圣经在线查询", ResourceType = "WebUrl",
+                     Path = "https://www.wordproject.org/bibles/gb/",
+                     FileFilter = "", Description = "在线圣经多版本对照查询",
                      CreatedAt = now, UpdatedAt = now },
         };
 

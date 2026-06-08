@@ -23,7 +23,7 @@ public class AgentLoop
             new AnalyzeSourceStep(aiService, promptBuilder, mcpService),
             new PlanStructureStep(aiService),
             new GenerateTextStep(aiService, promptBuilder),
-            new GenerateImageStep(aiImageService!),
+            new GenerateImageStep(aiImageService!, mcpService),
             new SensitiveCheckStep(sensitiveService),
             new ReviewStep(),
             new ReviseStep(aiService),
