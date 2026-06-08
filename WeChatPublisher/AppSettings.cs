@@ -185,13 +185,9 @@ public class AppSettings
 
         var defaults = new List<McpResourceConfig>
         {
-            // 文章素材 - 优先扫描公众号文案目录
-            new() { Name = "公众号文案库", ResourceType = "LocalFolder",
-                     Path = @"F:\传道 & 公众号文案",
-                     FileFilter = "*.docx;*.txt", Description = "公众号文案主素材库（信仰灵修类）" },
-            new() { Name = "F盘-全部文档(后备)", ResourceType = "LocalFolder",
+            new() { Name = "F盘-全部文档", ResourceType = "LocalFolder",
                      Path = @"F:\", FileFilter = "*.docx;*.txt;*.md",
-                     Description = "后备素材源（含日记等杂项，AI会识别过滤）" },
+                     Description = "F盘全局素材（自动排除已发布公众号文案目录避免重复）" },
             new() { Name = "视频号输出", ResourceType = "LocalFolder",
                      Path = GetJsonValue("Defaults:OutputVideoRoot"),
                      FileFilter = "*.mp4;*.mov", Description = "短视频输出目录" },

@@ -85,9 +85,14 @@ public class AnalyzeSourceStep : IAgentStep
             "圣灵", "救赎", "赞美", "默想", "温暖", "感动", "故事", "孩子", "父亲",
             "母亲", "家庭", "成长", "日记", "感悟", "反思" };
 
+        // 排除已发布公众号文章目录，避免重复内容
+        var publishedFolder = @"F:\传道 & 公众号文案";
         var result = new List<FileSample>();
         foreach (var s in samples)
         {
+            if (s.FilePath.StartsWith(publishedFolder, StringComparison.OrdinalIgnoreCase))
+                continue;
+
             var shortContent = s.Content.Length > 200 ? s.Content[..200] : s.Content;
 
             // 明显的垃圾文件跳过
