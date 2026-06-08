@@ -262,42 +262,52 @@ public class McpService
     {
         var results = new List<string>();
         var patterns = filter.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        var rng = new Random();
 
         try
         {
-            var dirs = new Queue<string>();
-            dirs.Enqueue(root);
+            var dirs = new List<Stack<string>>();
+            var rootStack = new Stack<string>(); rootStack.Push(root);
+            dirs.Add(rootStack);
 
-            while (dirs.Count > 0 && results.Count < maxFiles * 3)
+            int exploredDirs = 0;
+            while (results.Count < maxFiles * 5 && exploredDirs < 200)
             {
-                var dir = dirs.Dequeue();
-                var dirName = Path.GetFileName(dir);
+                // 随机选一个目录栈进去
+                var stackIdx = rng.Next(dirs.Count);
+                var stack = dirs[stackIdx];
+                if (stack.Count == 0) { dirs.RemoveAt(stackIdx); continue; }
+                var dir = stack.Pop();
+                exploredDirs++;
 
+                var dirName = Path.GetFileName(dir);
                 if (_skipFolders.Contains(dirName) || (dirName.StartsWith("$") && dirName.Length > 1))
                     continue;
 
-                const int maxPerDir = 3;
                 try
                 {
+                    const int maxPerDir = 2;
                     foreach (var pattern in patterns)
                     {
                         try
                         {
                             var files = Directory.GetFiles(dir, pattern.Trim(),
                                 SearchOption.TopDirectoryOnly);
-                            // 每个目录最多取maxPerDir个文件，确保全盘分布
                             results.AddRange(files.Take(maxPerDir));
                         }
                         catch (UnauthorizedAccessException) { }
                         catch (DirectoryNotFoundException) { }
                     }
 
+                    // 子目录放入新栈
+                    var subs = new Stack<string>();
                     foreach (var sub in Directory.GetDirectories(dir))
                     {
-                        try { dirs.Enqueue(sub); }
+                        try { subs.Push(sub); }
                         catch (UnauthorizedAccessException) { }
                         catch (DirectoryNotFoundException) { }
                     }
+                    if (subs.Count > 0) dirs.Add(subs);
                 }
                 catch (UnauthorizedAccessException) { }
                 catch (DirectoryNotFoundException) { }
@@ -306,7 +316,7 @@ public class McpService
         catch (UnauthorizedAccessException) { }
         catch (DirectoryNotFoundException) { }
 
-        return results;
+        return results.OrderBy(_ => rng.Next()).Take(maxFiles).ToList();
     }
 
     public string ReadTextFile(string filePath) => File.ReadAllText(filePath);

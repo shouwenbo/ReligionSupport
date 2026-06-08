@@ -148,11 +148,10 @@ public partial class ArticleGeneratorWindow : Window
         finally { BtnRefreshVerses.IsEnabled = true; }
     }
 
-    private void LbMaterials_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void BtnPreviewMaterial_Click(object sender, RoutedEventArgs e)
     {
-        if (LbMaterials.SelectedItem is SelectableItem item)
-            MessageBox.Show(item.Data.Length > 1000 ? item.Data[..1000] + "..." : item.Data,
-                "素材预览", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (sender is Button btn && btn.Tag is string data)
+            MessageBox.Show(data, "素材段落全貌", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void RefreshPersonaCount()
