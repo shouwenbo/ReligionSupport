@@ -77,7 +77,7 @@ public class AgentLoop
                     log.CompletedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
                     if (result.NeedsRevision) needsRevision = true;
-                    if (result.IsFinal) break;
+                    if (result.IsFinal) { needsRevision = false; break; }
 
                     OnStepExecuted?.Invoke(log);
 

@@ -243,9 +243,9 @@ public partial class ArticleGeneratorWindow : Window
             agentLoop.OnLog += (level, msg) =>
                 Dispatcher.Invoke(() =>
                 {
-                    var icon = level switch { "error" => "❌", "warn" => "⚠️", _ => "  " };
-                    var lines = (TbProgress.Text + $"{icon} {msg}\n").Split('\n');
-                    TbProgress.Text = string.Join("\n", lines.TakeLast(12));
+                    var icon = level switch { "error" => "✗", "warn" => "⚠", _ => "✓" };
+                    TbProgress.AppendText($"{icon} {msg}\n");
+                    TbProgress.ScrollToEnd();
                 });
             agentLoop.OnTextChunk += (chunk) =>
                 Dispatcher.Invoke(() => TbOutput.AppendText(chunk));

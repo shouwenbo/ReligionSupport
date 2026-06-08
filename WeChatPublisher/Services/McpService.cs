@@ -271,7 +271,7 @@ public class McpService
             dirs.Add(rootStack);
 
             int exploredDirs = 0;
-            while (results.Count < maxFiles * 5 && exploredDirs < 200)
+            while (results.Count < maxFiles * 10 && exploredDirs < 500)
             {
                 // 随机选一个目录栈进去
                 var stackIdx = rng.Next(dirs.Count);
