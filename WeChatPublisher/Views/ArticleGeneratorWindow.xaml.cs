@@ -69,12 +69,14 @@ public partial class ArticleGeneratorWindow : Window
 
     private void RbMcp_Checked(object sender, RoutedEventArgs e)
     {
+        if (!IsLoaded) return;
         CmbMcpResource.IsEnabled = true;
         GbManualInput.Visibility = Visibility.Collapsed;
     }
 
     private void RbManual_Checked(object sender, RoutedEventArgs e)
     {
+        if (!IsLoaded) return;
         CmbMcpResource.IsEnabled = false;
         GbManualInput.Visibility = Visibility.Visible;
     }
