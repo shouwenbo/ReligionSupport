@@ -137,7 +137,7 @@ public class AnalyzeSourceStep : IAgentStep
         // 1. 本地快速过滤
         samples = QuickFilter(samples);
         if (samples.Count <= 3) return samples; // 少于3个不再调用AI
-        if (samples.Count > 10) samples = samples[..10];
+        if (samples.Count > 10) samples = samples.Take(10).ToList();
 
         // 2. AI精确判断（只发少数字符的预览）
         var previews = string.Join("\n",
