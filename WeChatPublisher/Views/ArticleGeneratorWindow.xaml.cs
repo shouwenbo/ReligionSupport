@@ -132,11 +132,26 @@ public partial class ArticleGeneratorWindow : Window
         catch { }
     }
 
+    private void SetControlsEnabled(bool enabled)
+    {
+        BtnStart.IsEnabled = enabled;
+        BtnToggleSettings.IsEnabled = enabled;
+        BtnLearn.IsEnabled = enabled;
+        BtnSaveDraft.IsEnabled = enabled;
+        BtnCopy.IsEnabled = enabled;
+        BtnPublish.IsEnabled = enabled;
+        SldTemperature.IsEnabled = enabled;
+        TxtMaxRounds.IsEnabled = enabled;
+        CmbStyle.IsEnabled = enabled;
+        CmbMcpResource.IsEnabled = enabled;
+        CbManualReview.IsEnabled = enabled;
+    }
+
     private async void BtnStart_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            BtnStart.Visibility = Visibility.Collapsed;
+            SetControlsEnabled(false);
             BtnStop.Visibility = Visibility.Visible;
             PbProgress.Value = 0;
             TbProgress.Text = "准备中...";
@@ -180,6 +195,7 @@ public partial class ArticleGeneratorWindow : Window
         {
             BtnStart.Visibility = Visibility.Visible;
             BtnStop.Visibility = Visibility.Collapsed;
+            SetControlsEnabled(true);
         }
     }
 
