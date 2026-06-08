@@ -129,16 +129,19 @@ public partial class ArticleGeneratorWindow : Window
                 var rng = new Random();
                 for (int i = 0; i < 10; i++)
                 {
-                    var volume = rng.Next(1, 67);
-                    var chapter = rng.Next(1, Math.Min(bible.GetChapterCount(volume), 50));
                     try
                     {
-                        var verse = bible.QueryVerses($"{volume}:{chapter}", 4);
+                        var kindSn = rng.Next(1, 67); // 1-66卷
+                        var book = bible.GetBookByKindSn(kindSn);
+                        if (book == null) continue;
+                        var maxChapter = bible.GetChapterCount(kindSn);
+                        var chapter = rng.Next(1, Math.Min(maxChapter, 50));
+                        var verse = bible.QueryVerses($"{book.Value.ShortName}{chapter}:1-3", 4);
                         if (verse.Length > 5)
                             items.Add(new SelectableItem
                             {
-                                Display = $"{verse[..Math.Min(verse.Length, 80)]}",
-                                Data = verse,
+                                Display = $"[{book.Value.ShortName}{chapter}章] {verse[..Math.Min(verse.Length, 70)]}",
+                                Data = $"{book.Value.FullName} {chapter}章\n{verse}",
                                 IsSelected = false
                             });
                     }
@@ -149,6 +152,13 @@ public partial class ArticleGeneratorWindow : Window
         }
         catch (Exception ex) { Logger.Warn($"刷新经文失败: {ex.Message}"); }
         finally { BtnRefreshVerses.IsEnabled = true; }
+    }
+
+    private void LbMaterials_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (LbMaterials.SelectedItem is SelectableItem item)
+            MessageBox.Show(item.Data.Length > 1000 ? item.Data[..1000] + "..." : item.Data,
+                "素材预览", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void RefreshPersonaCount()

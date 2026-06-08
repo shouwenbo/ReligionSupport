@@ -48,7 +48,8 @@
                             FontSize="10" Click="BtnRefreshMaterials_Click"/>
                 </StackPanel>
                 <ListBox Grid.Column="0" Grid.Row="1" x:Name="LbMaterials" MaxHeight="180"
-                         SelectionMode="Multiple" FontSize="11">
+                         SelectionMode="Multiple" FontSize="11"
+                         MouseDoubleClick="LbMaterials_MouseDoubleClick">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <CheckBox Content="{Binding Display}" IsChecked="{Binding IsSelected}"

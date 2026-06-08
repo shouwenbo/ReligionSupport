@@ -23,11 +23,18 @@ public class BibleService
         });
     }
 
-    public int GetChapterCount(int volumeSn)
+    public int GetChapterCount(int kindSn)
     {
         using var db = GetDb();
         return db.Queryable<Models.BibleID>()
-            .Where(b => b.SN == volumeSn).Select(b => b.ChapterNumber).First() + 1;
+            .Where(b => b.KindSN == kindSn).Select(b => b.ChapterNumber).First() + 1;
+    }
+
+    public (string ShortName, string FullName)? GetBookByKindSn(int kindSn)
+    {
+        using var db = GetDb();
+        var book = db.Queryable<Models.BibleID>().First(b => b.KindSN == kindSn);
+        return book != null ? (book.ShortName, book.FullName) : null;
     }
 
     public string QueryVerses(string reference, int format = 1)
