@@ -27,7 +27,8 @@
                 <DataGridTextColumn Header="源词" Binding="{Binding SourceWord}" Width="80"/>
                 <DataGridTextColumn Header="替换词" Binding="{Binding ReplacementWords}" Width="180"/>
                 <DataGridTextColumn Header="类别" Binding="{Binding Category}" Width="70"/>
-                <DataGridTextColumn Header="严格度" Binding="{Binding StrictLevel}" Width="70"/>
+                <DataGridTextColumn Header="严格度" Binding="{Binding StrictLevel}" Width="50"/>
+                <DataGridTextColumn Header="策略" Binding="{Binding StrategyDisplay}" Width="90"/>
                 <DataGridCheckBoxColumn Header="启用" Binding="{Binding IsEnabled}" Width="50"/>
                 <DataGridTextColumn Header="备注" Binding="{Binding Notes}" Width="*"/>
             </DataGrid.Columns>
@@ -63,6 +64,18 @@
                     <ComboBoxItem Content="建议替换 (0)" Tag="0"/>
                     <ComboBoxItem Content="强制替换 (1)" Tag="1" IsSelected="True"/>
                 </ComboBox>
+
+                <Label Grid.Row="2" Grid.Column="0" Content="处理策略:"/>
+                <ComboBox Grid.Row="2" Grid.Column="1" x:Name="CmbStrategy" Margin="0,2">
+                    <ComboBoxItem Content="直接替换" Tag="0"/>
+                    <ComboBoxItem Content="AI意境改写" Tag="1"/>
+                    <ComboBoxItem Content="AI自动抉择" Tag="2" IsSelected="True"/>
+                </ComboBox>
+
+                <Label Grid.Row="3" Grid.Column="0" Content="改写示例:"/>
+                <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" x:Name="TxtRewriteExamples"
+                         Margin="0,2" Height="40" TextWrapping="Wrap" AcceptsReturn="True"
+                         ToolTip="每行一条: 原文 → 改写后"/>
             </Grid>
         </GroupBox>
 

@@ -40,6 +40,8 @@ public partial class SensitiveWordWindow : Window
         TxtReplacements.Text = word.ReplacementWords;
         SelectCategory(word.Category);
         SelectStrictLevel(word.StrictLevel);
+        SelectStrategy(word.Strategy);
+        TxtRewriteExamples.Text = word.RewriteExamples ?? "";
     }
 
     private void SelectCategory(string cat)
@@ -52,6 +54,12 @@ public partial class SensitiveWordWindow : Window
     {
         foreach (ComboBoxItem item in CmbStrictLevel.Items)
             if (item.Tag?.ToString() == level.ToString()) { CmbStrictLevel.SelectedItem = item; return; }
+    }
+
+    private void SelectStrategy(int strategy)
+    {
+        foreach (ComboBoxItem item in CmbStrategy.Items)
+            if (item.Tag?.ToString() == strategy.ToString()) { CmbStrategy.SelectedItem = item; return; }
     }
 
     private void BtnAdd_Click(object sender, RoutedEventArgs e)
@@ -149,6 +157,8 @@ public partial class SensitiveWordWindow : Window
             ReplacementWords = TxtReplacements.Text.Trim(),
             Category = (CmbCategory.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "自定义",
             StrictLevel = int.Parse(((CmbStrictLevel.SelectedItem as ComboBoxItem)?.Tag as string) ?? "1"),
+            Strategy = int.Parse(((CmbStrategy.SelectedItem as ComboBoxItem)?.Tag as string) ?? "2"),
+            RewriteExamples = TxtRewriteExamples.Text.Trim().Length > 0 ? TxtRewriteExamples.Text.Trim() : null,
             IsEnabled = 1
         };
 
