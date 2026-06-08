@@ -228,10 +228,23 @@ public class StyleLearningService
     {
         var df = string.Join("\n", diffs.Take(10).Select(d =>
             $"- [{d.Type}] {d.Before} → {d.After}"));
-        return "分析用户的编辑修改，提取写作风格偏好。只输出JSON：\n" +
-            "{\n  \"style_patterns\": [\n    {\"pattern\": \"模式\", \"before\": \"原文\", \"after\": \"改后\", \"type\": \"style|sensitive\"}\n  ],\n" +
-            "  \"discovered_words\": [\n    {\"source\": \"原词\", \"replacement\": \"替换\", \"count\": N, \"category\": \"称谓|概念|行为|用语|自定义\"}\n  ],\n" +
-            "  \"summary\": \"一句话总结\"\n}\n\n" +
+        return "分析用户的编辑修改，只提取【抽象风格特征】，不要记录具体替换内容。只输出JSON：\n" +
+            "{\n" +
+            "  \"style_patterns\": [\n" +
+            "    {\"pattern\": \"用户偏好温暖亲切的第二人称\", \"before\": \"\", \"after\": \"\", \"type\": \"style\"}\n" +
+            "  ],\n" +
+            "  \"discovered_words\": [\n" +
+            "    {\"source\": \"原词\", \"replacement\": \"替换\", \"count\": N, \"category\": \"称谓|概念|行为|用语|自定义\"}\n" +
+            "  ],\n" +
+            "  \"summary\": \"作者风格: 温暖细腻的语气, 短句偏好, 结尾常用祝福句式\"\n" +
+            "}\n\n" +
+            "风格维度参考(只提取抽象特征, 不要具体例子):\n" +
+            "- 语气: 温暖/坚定/平和/诗意/日常\n" +
+            "- 句式: 短句/长句/排比/反问/设问\n" +
+            "- 结尾: 祝福/感悟/引用/留白\n" +
+            "- 人称: 第二人称(你/我们)/第一人称(我)\n" +
+            "- 节奏: 娓娓道来/层层递进/开门见山\n" +
+            "- 词汇: 口语化/书面化/诗意/朴实\n\n" +
             $"修改类别: {cat}\n差异:\n{df}";
     }
 
