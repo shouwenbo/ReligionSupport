@@ -12,9 +12,9 @@ public class StyleLearningService
 {
     private readonly AIService _ai;
     private const int CompressInterval = 10;
-    private const int MaxRecentPatterns = 30;
-    private const int MaxInjectionChars = 400;
-    private const int MaxRetrievedPatterns = 5;
+    private const int MaxRecentPatterns = 50;   // 保留50条供RAG检索
+    private const int MaxInjectionChars = 8000;  // 风格注入上限, 占64K窗口的~8%
+    private const int MaxRetrievedPatterns = 8;  // RAG最多检索8条
 
     public StyleLearningService() { _ai = new AIService(new SensitiveWordService()); }
 
@@ -57,7 +57,7 @@ public class StyleLearningService
         return result;
     }
 
-    // ========== RAG核心：按文章主题检索相关风格 ==========
+    // ========== RAG核心：三层注入 ==========
     public string BuildPersonaInjection(string category, string? sourceContent = null)
     {
         var persona = AppSettings.Instance.Db.ExecuteInScope(db =>
@@ -68,31 +68,37 @@ public class StyleLearningService
         try
         {
             var profile = LoadProfile(persona);
+            var layers = new List<string>();
 
-            // 1. AI压缩摘要始终包含（最精华）
-            var summary = profile.TryGetValue("summary", out var s) ? s?.ToString() : null;
-            var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(summary)) parts.Add(summary);
+            // Layer 1: 风格摘要（AI压缩，始终注入）
+            if (profile.TryGetValue("summary", out var s) && s is string summary && summary.Length > 0)
+                layers.Add($"【风格摘要】{summary}");
 
-            // 2. RAG检索：按当前文章主题匹配相关模式
+            // Layer 2: RAG检索的匹配模式（按主题关键词检索）
             if (!string.IsNullOrWhiteSpace(sourceContent))
             {
                 var recent = GetRecentPatterns(profile);
                 var keywords = ExtractKeywords(sourceContent);
-                var scored = recent
+                var matches = recent
                     .Select(p => (Pattern: p, Score: KeywordScore(p, keywords)))
                     .Where(x => x.Score > 0)
                     .OrderByDescending(x => x.Score)
-                    .Take(MaxRetrievedPatterns);
-
-                foreach (var (pattern, _) in scored)
-                {
-                    var pat = pattern.GetValueOrDefault("pattern", "").ToString() ?? "";
-                    if (pat.Length > 0) parts.Add($"习惯: {pat}");
-                }
+                    .Take(MaxRetrievedPatterns)
+                    .Select(x => $"- {x.Pattern.GetValueOrDefault("pattern", "")}")
+                    .ToList();
+                if (matches.Count > 0)
+                    layers.Add($"【主题相关风格({matches.Count}条)】\n{string.Join("\n", matches)}");
             }
 
-            var injection = $"【作者风格({persona.EditCount}次学习)】{string.Join("; ", parts)}";
+            // Layer 3: 最近3次修改（新鲜记忆，始终注入）
+            var fresh = GetRecentPatterns(profile).TakeLast(3)
+                .Where(p => p.ContainsKey("pattern"))
+                .Select(p => $"- {p["pattern"]}")
+                .ToList();
+            if (fresh.Count > 0)
+                layers.Add($"【最近学到的风格】\n{string.Join("\n", fresh)}");
+
+            var injection = $"【作者风格(已学习{persona.EditCount}次)】\n{string.Join("\n\n", layers)}";
             return injection.Length > MaxInjectionChars ? injection[..MaxInjectionChars] : injection;
         }
         catch { return ""; }
