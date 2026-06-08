@@ -165,8 +165,17 @@ public partial class ArticleGeneratorWindow : Window
             var agentLoop = new AgentLoop(aiService, _sensitiveService,
                 promptBuilder, AppSettings.Instance, _mcpService);
 
+            TbProgress.Text = ""; // 清空上次日志
+            TbOutput.Text = "";    // 清空输出区
             agentLoop.OnLog += (level, msg) =>
-                Dispatcher.Invoke(() => TbProgress.Text = msg);
+                Dispatcher.Invoke(() =>
+                {
+                    var icon = level switch { "error" => "❌", "warn" => "⚠️", _ => "  " };
+                    var lines = (TbProgress.Text + $"{icon} {msg}\n").Split('\n');
+                    TbProgress.Text = string.Join("\n", lines.TakeLast(12));
+                });
+            agentLoop.OnTextChunk += (chunk) =>
+                Dispatcher.Invoke(() => TbOutput.AppendText(chunk));
             agentLoop.OnStepExecuted += (log) =>
                 Dispatcher.Invoke(() => PbProgress.Value = Math.Min(100, PbProgress.Value + 15));
 

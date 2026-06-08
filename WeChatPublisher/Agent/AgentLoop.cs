@@ -11,6 +11,8 @@ public class AgentLoop
 
     public event Action<AgentStepLog>? OnStepExecuted;
     public event Action<string, string>? OnLog;
+    public event Action<string>? OnTextChunk;
+    public void FireTextChunk(string chunk) => OnTextChunk?.Invoke(chunk);
 
     public AgentLoop(AIService aiService, SensitiveWordService sensitiveService,
         PromptBuilderService promptBuilder, AppSettings settings, McpService? mcpService = null,
@@ -22,7 +24,7 @@ public class AgentLoop
         [
             new AnalyzeSourceStep(aiService, promptBuilder, mcpService),
             new PlanStructureStep(aiService),
-            new GenerateTextStep(aiService, promptBuilder),
+            new GenerateTextStep(aiService, promptBuilder, this),
             new GenerateImageStep(aiImageService!, mcpService),
             new SensitiveCheckStep(sensitiveService),
             new ReviewStep(),
