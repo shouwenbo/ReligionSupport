@@ -126,22 +126,16 @@ public partial class ArticleGeneratorWindow : Window
             if (File.Exists(biblePath))
             {
                 var bible = new BibleService(biblePath);
-                var rng = new Random();
                 for (int i = 0; i < 10; i++)
                 {
                     try
                     {
-                        var kindSn = rng.Next(1, 67); // 1-66卷
-                        var book = bible.GetBookByKindSn(kindSn);
-                        if (book == null) continue;
-                        var maxChapter = bible.GetChapterCount(kindSn);
-                        var chapter = rng.Next(1, Math.Min(maxChapter, 50));
-                        var verse = bible.QueryVerses($"{book.Value.ShortName}{chapter}:1-3", 4);
-                        if (verse.Length > 5)
+                        var passage = bible.GetRandomPassage();
+                        if (passage.Length > 10)
                             items.Add(new SelectableItem
                             {
-                                Display = $"[{book.Value.ShortName}{chapter}章] {verse[..Math.Min(verse.Length, 70)]}",
-                                Data = $"{book.Value.FullName} {chapter}章\n{verse}",
+                                Display = passage[..Math.Min(passage.Length, 80)],
+                                Data = passage,
                                 IsSelected = false
                             });
                     }

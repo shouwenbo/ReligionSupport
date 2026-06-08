@@ -276,14 +276,17 @@ public class McpService
                 if (_skipFolders.Contains(dirName) || (dirName.StartsWith("$") && dirName.Length > 1))
                     continue;
 
+                const int maxPerDir = 3;
                 try
                 {
                     foreach (var pattern in patterns)
                     {
                         try
                         {
-                            results.AddRange(Directory.GetFiles(dir, pattern.Trim(),
-                                SearchOption.TopDirectoryOnly));
+                            var files = Directory.GetFiles(dir, pattern.Trim(),
+                                SearchOption.TopDirectoryOnly);
+                            // 每个目录最多取maxPerDir个文件，确保全盘分布
+                            results.AddRange(files.Take(maxPerDir));
                         }
                         catch (UnauthorizedAccessException) { }
                         catch (DirectoryNotFoundException) { }

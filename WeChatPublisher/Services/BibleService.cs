@@ -23,18 +23,46 @@ public class BibleService
         });
     }
 
-    public int GetChapterCount(int kindSn)
+    public int GetChapterCount(int volumeSn)
     {
         using var db = GetDb();
-        return db.Queryable<Models.BibleID>()
-            .Where(b => b.KindSN == kindSn).Select(b => b.ChapterNumber).First() + 1;
+        return db.Queryable<BibleID>().Where(b => b.SN == volumeSn)
+            .Select(b => b.ChapterNumber).First() + 1;
     }
 
-    public (string ShortName, string FullName)? GetBookByKindSn(int kindSn)
+    public (string ShortName, string FullName)? GetBookBySn(int sn)
     {
         using var db = GetDb();
-        var book = db.Queryable<Models.BibleID>().First(b => b.KindSN == kindSn);
+        var book = db.Queryable<BibleID>().First(b => b.SN == sn);
         return book != null ? (book.ShortName, book.FullName) : null;
+    }
+
+    /// <summary>获取随机经文段落(3-5节)</summary>
+    public string GetRandomPassage()
+    {
+        using var db = GetDb();
+        // 随机选一卷
+        var rng = new Random();
+        var sn = rng.Next(1, 67);
+        var book = db.Queryable<BibleID>().First(b => b.SN == sn);
+        if (book == null) return "";
+
+        // 随机选一章
+        var maxChap = book.ChapterNumber > 0 ? book.ChapterNumber : 1;
+        var chap = rng.Next(1, maxChap + 1);
+
+        // 随机选3-5节
+        var verses = db.Queryable<Bible>()
+            .Where(b => b.VolumeSN == sn && b.ChapterSN == chap)
+            .ToList();
+        if (verses.Count == 0) return "";
+
+        var start = rng.Next(0, Math.Max(0, verses.Count - 5));
+        var count = Math.Min(rng.Next(3, 6), verses.Count - start);
+        var selected = verses.Skip(start).Take(count).ToList();
+
+        var text = string.Join(" ", selected.Select(v => v.Lection));
+        return $"{book.FullName} {chap}:{selected[0].VerseSN}-{selected[^1].VerseSN} {text}";
     }
 
     public string QueryVerses(string reference, int format = 1)
