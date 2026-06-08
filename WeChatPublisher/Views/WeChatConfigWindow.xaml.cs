@@ -128,6 +128,17 @@ public partial class WeChatConfigWindow : Window
         var cfg = AppSettings.Instance.GetAllWeChatConfigs().FirstOrDefault(c => c.Id == accountId);
         if (cfg == null) return;
 
+        // 未完整配置的账号跳过
+        if (string.IsNullOrWhiteSpace(cfg.AppId) || cfg.AppSecretEncrypted == null)
+        {
+            cfg.IsHealthy = 0;
+            cfg.HealthMessage = "请先填写 AppID 和 AppSecret";
+            cfg.LastHealthCheck = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            AppSettings.Instance.SaveWeChatConfig(cfg);
+            if (_editingId == cfg.Id) UpdateHealthIndicator(cfg);
+            return;
+        }
+
         try
         {
             var service = new WeChatService();
