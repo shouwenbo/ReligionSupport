@@ -102,6 +102,7 @@ public class AgentLoop
                 context.State["auto_sanitized"] = "true";
         }
 
+        OnLog?.Invoke("info", $"✅ 生成完成 — 共 {context.CurrentRound} 轮，输出 {context.FinalText?.Length ?? 0} 字");
         SaveTaskComplete(context, taskId);
         return context;
     }
