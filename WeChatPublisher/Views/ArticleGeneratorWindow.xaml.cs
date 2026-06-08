@@ -10,75 +10,98 @@ public partial class ArticleGeneratorWindow : Window
 {
     private int? _taskId;
     private CancellationTokenSource? _cts;
+    private bool _loaded;
     private readonly SensitiveWordService _sensitiveService = new();
     private readonly McpService _mcpService = new();
-    private readonly AIImageService _aiImageService = new();
 
     public ArticleGeneratorWindow(int? taskId = null)
     {
         _taskId = taskId;
         Logger.Info($"ArticleGeneratorWindow 构造 taskId={taskId}");
-        try
-        {
-            InitializeComponent();
+        InitializeComponent();
         AppIcon.Set(this);
-            Loaded += OnLoaded;
-        }
-        catch (Exception ex)
-        {
-            Logger.Error("ArticleGeneratorWindow InitializeComponent 失败", ex);
-            throw;
-        }
+        _loaded = true;
+        Loaded += OnLoaded;
+        SldTemperature.ValueChanged += (_, _) =>
+            TbTempValue.Text = SldTemperature.Value.ToString("F1");
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         try
         {
-            Logger.Info("ArticleGeneratorWindow OnLoaded");
-            RefreshMcpResources();
-            RefreshAiStatus();
+            AutoScanMcp();
+            RefreshAiSummary();
             if (_taskId.HasValue) LoadExistingTask(_taskId.Value);
         }
         catch (Exception ex)
         {
             Logger.Error("ArticleGeneratorWindow OnLoaded 失败", ex);
-            MessageBox.Show($"加载失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
-    private void RefreshMcpResources()
+    private void AutoScanMcp()
     {
         CmbMcpResource.Items.Clear();
         var resources = _mcpService.GetAllResources();
+
         foreach (var res in resources)
             CmbMcpResource.Items.Add(new ComboBoxItem { Content = res.Name, Tag = res.Id });
-        if (CmbMcpResource.Items.Count > 0) CmbMcpResource.SelectedIndex = 0;
+
+        if (CmbMcpResource.Items.Count > 0)
+            CmbMcpResource.SelectedIndex = 0;
+
+        // 异步采样首选的MCP资源
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var samples = _mcpService.SampleFiles(
+                    resources.FirstOrDefault()?.Id ?? 0, 10, 300);
+                var count = samples.Count;
+                var cached = samples.Count(s => s.IsCached);
+                var types = samples.Select(s => Path.GetExtension(s.FileName).ToLowerInvariant())
+                    .Where(e => e.Length > 0).Distinct().ToList();
+
+                Dispatcher.Invoke(() =>
+                {
+                    if (count > 0)
+                        TbSourceSummary.Text = $"从 MCP 找到 {count} 篇素材"
+                            + (cached > 0 ? $" ({cached} 篇已缓存)" : "")
+                            + $" | 类型: {string.Join(", ", types)}";
+                    else
+                        TbSourceSummary.Text = "MCP 中暂无可用素材";
+                });
+            }
+            catch
+            {
+                Dispatcher.Invoke(() =>
+                    TbSourceSummary.Text = "MCP 扫描失败，将使用纯AI生成");
+            }
+        });
     }
 
-    private void RefreshAiStatus()
+    private void RefreshAiSummary()
     {
-        var config = AppSettings.Instance.GetActiveTextAiConfig();
-        TbAiStatus.Text = config != null
-            ? $"当前模型: {config.ProviderName} - {config.ModelName}"
-            : "未配置AI - 请先配置";
-        TbAiStatus.Foreground = config != null
-            ? System.Windows.Media.Brushes.Green
-            : System.Windows.Media.Brushes.OrangeRed;
+        var textCfg = AppSettings.Instance.GetActiveTextAiConfig();
+        var imgCfg = AppSettings.Instance.GetActiveImageAiConfig();
+        var parts = new List<string>();
+
+        if (textCfg != null)
+            parts.Add($"文本: {textCfg.ProviderName} ({textCfg.ModelName})");
+        if (imgCfg != null)
+            parts.Add($"配图: {imgCfg.ProviderName}");
+
+        TbAiSummary.Text = string.Join("  |  ", parts);
+        if (parts.Count == 0)
+            TbAiSummary.Text = "请先配置 AI";
     }
 
-    private void RbMcp_Checked(object sender, RoutedEventArgs e)
+    private void BtnToggleSettings_Click(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded) return;
-        CmbMcpResource.IsEnabled = true;
-        GbManualInput.Visibility = Visibility.Collapsed;
-    }
-
-    private void RbManual_Checked(object sender, RoutedEventArgs e)
-    {
-        if (!IsLoaded) return;
-        CmbMcpResource.IsEnabled = false;
-        GbManualInput.Visibility = Visibility.Visible;
+        var visible = PanelSettings.Visibility == Visibility.Visible;
+        PanelSettings.Visibility = visible ? Visibility.Collapsed : Visibility.Visible;
+        BtnToggleSettings.Content = visible ? "高级设置 ▾" : "高级设置 ▴";
     }
 
     private void LoadExistingTask(int taskId)
@@ -91,7 +114,6 @@ public partial class ArticleGeneratorWindow : Window
             {
                 TbOutput.Text = task.FinalText;
                 TbSanitized.Text = _sensitiveService.Sanitize(task.FinalText);
-                TxtTitle.Text = task.SourceTitle ?? "";
             }
         }
         catch { }
@@ -101,66 +123,24 @@ public partial class ArticleGeneratorWindow : Window
     {
         try
         {
-            BtnStart.IsEnabled = false;
-            BtnStop.IsEnabled = true;
+            BtnStart.Visibility = Visibility.Collapsed;
+            BtnStop.Visibility = Visibility.Visible;
             PbProgress.Value = 0;
-            TbOutput.Text = "";
-            TbSanitized.Text = "";
+            TbProgress.Text = "准备中...";
+            TabOutput.SelectedIndex = 0;
 
             _cts = new CancellationTokenSource();
-
-            var context = new AgentContext
-            {
-                TaskType = "article",
-                MaxRounds = int.TryParse(TxtMaxRounds.Text, out var r) ? r : 3,
-                Temperature = SldTemperature.Value,
-                ArticleStyle = (CmbStyle.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "温情生活型",
-                PauseForManualReview = CbManualReview.IsChecked == true
-            };
-
-            // Get source
-            if (RbMcp.IsChecked == true)
-            {
-                if (CmbMcpResource.SelectedItem is ComboBoxItem item && item.Tag is int resId)
-                {
-                    var docxFiles = _mcpService.ReadDocxFiles(resId, 1);
-                    if (docxFiles.Count == 0)
-                    {
-                        MessageBox.Show("MCP资源中没有.docx文件", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
-                    var doc = docxFiles[0];
-                    context.SourceTitle = doc.Title;
-                    context.SourceDescription = doc.Description;
-                    context.SourceVerse = doc.Verse;
-                    context.SourceText = doc.Content;
-                    context.ReferenceFiles.Add(doc.FilePath);
-                }
-            }
-            else
-            {
-                context.SourceTitle = TxtTitle.Text;
-                context.SourceDescription = TxtDesc.Text;
-                context.SourceVerse = TxtVerse.Text;
-                context.SourceText = TxtContent.Text;
-            }
+            var context = BuildContext();
 
             var aiService = new AIService(_sensitiveService);
             var promptBuilder = new PromptBuilderService();
-            var agentLoop = new AgentLoop(aiService, _sensitiveService, promptBuilder, AppSettings.Instance, _mcpService, _aiImageService);
+            var agentLoop = new AgentLoop(aiService, _sensitiveService,
+                promptBuilder, AppSettings.Instance, _mcpService);
 
             agentLoop.OnLog += (level, msg) =>
-            {
                 Dispatcher.Invoke(() => TbProgress.Text = msg);
-            };
-
             agentLoop.OnStepExecuted += (log) =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    PbProgress.Value = Math.Min(100, PbProgress.Value + 10);
-                });
-            };
+                Dispatcher.Invoke(() => PbProgress.Value = Math.Min(100, PbProgress.Value + 15));
 
             var result = await agentLoop.ExecuteAsync(context, _cts.Token);
 
@@ -170,6 +150,7 @@ public partial class ArticleGeneratorWindow : Window
                 TbSanitized.Text = _sensitiveService.Sanitize(result.FinalText);
                 PbProgress.Value = 100;
                 TbProgress.Text = "生成完成!";
+                TabOutput.SelectedIndex = 1;
             }
         }
         catch (OperationCanceledException)
@@ -178,24 +159,43 @@ public partial class ArticleGeneratorWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"生成失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            TbProgress.Text = $"错误: {ex.Message}";
+            Logger.Error("文章生成失败", ex);
+            MessageBox.Show($"生成失败: {ex.Message}", "错误",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
-            BtnStart.IsEnabled = true;
-            BtnStop.IsEnabled = false;
+            BtnStart.Visibility = Visibility.Visible;
+            BtnStop.Visibility = Visibility.Collapsed;
         }
     }
 
-    private void BtnStop_Click(object sender, RoutedEventArgs e)
+    private AgentContext BuildContext()
     {
-        _cts?.Cancel();
+        var context = new AgentContext
+        {
+            TaskType = "article",
+            MaxRounds = int.TryParse(TxtMaxRounds.Text, out var r) ? r : 3,
+            Temperature = SldTemperature.Value,
+            PauseForManualReview = CbManualReview.IsChecked == true
+        };
+
+        var style = (CmbStyle.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        context.ArticleStyle = style ?? "AI自动选择";
+        context.State["article_style"] = context.ArticleStyle;
+
+        // MCP资源ID存入context供Agent使用
+        if (CmbMcpResource.SelectedItem is ComboBoxItem item && item.Tag is int resId)
+            context.State["mcp_resource_id"] = resId.ToString();
+
+        return context;
     }
+
+    private void BtnStop_Click(object sender, RoutedEventArgs e) => _cts?.Cancel();
 
     private void BtnSaveDraft_Click(object sender, RoutedEventArgs e)
     {
-        var text = TbSanitized.Text;
+        var text = TbSanitized.Text.Length > 0 ? TbSanitized.Text : TbOutput.Text;
         if (string.IsNullOrWhiteSpace(text))
         {
             MessageBox.Show("没有可保存的内容", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -204,41 +204,32 @@ public partial class ArticleGeneratorWindow : Window
 
         var draft = new ArticleDraft
         {
-            Title = TxtTitle.Text,
+            Title = "AI生成文章",
             Content = text,
             Status = "draft",
             CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
         };
-
         AppSettings.Instance.Db.ExecuteInScope(db => db.Insertable(draft).ExecuteCommand());
         MessageBox.Show("草稿已保存", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private async void BtnPublish_Click(object sender, RoutedEventArgs e)
     {
-        var text = TbSanitized.Text;
+        var text = TbSanitized.Text.Length > 0 ? TbSanitized.Text : TbOutput.Text;
         if (string.IsNullOrWhiteSpace(text))
         {
             MessageBox.Show("没有可发布的内容", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
-
         try
         {
             var wechatService = new WeChatService();
-            var draft = new ArticleDraft
-            {
-                Title = TxtTitle.Text,
-                Content = text,
-                Status = "published"
-            };
-
+            var draft = new ArticleDraft { Title = "AI生成文章", Content = text, Status = "published" };
             var mediaId = await wechatService.CreateDraftAsync(draft);
             draft.MediaId = mediaId;
             draft.UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             AppSettings.Instance.Db.ExecuteInScope(db => db.Insertable(draft).ExecuteCommand());
-
             MessageBox.Show($"已发布到公众号草稿箱! MediaId: {mediaId}", "成功",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -250,10 +241,10 @@ public partial class ArticleGeneratorWindow : Window
 
     private void BtnCopy_Click(object sender, RoutedEventArgs e)
     {
-        var text = TbSanitized.Text;
+        var text = TbSanitized.Text.Length > 0 ? TbSanitized.Text : TbOutput.Text;
         if (!string.IsNullOrWhiteSpace(text))
         {
-            System.Windows.Clipboard.SetText(text);
+            Clipboard.SetText(text);
             TbProgress.Text = "已复制到剪贴板";
         }
     }

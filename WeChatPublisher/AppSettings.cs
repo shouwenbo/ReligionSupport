@@ -189,25 +189,9 @@ public class AppSettings
             new() { Name = "F盘-全部文档", ResourceType = "LocalFolder",
                      Path = @"F:\", FileFilter = "*.docx;*.txt;*.md",
                      Description = "F盘全局文档索引，作为AI文章生成的参考素材" },
-            new() { Name = "公众号文案", ResourceType = "LocalFolder",
-                     Path = GetJsonValue("Defaults:OutputArticleRoot"),
-                     FileFilter = "*.docx", Description = "已发布的公众号文案存档" },
-            // 图片素材 - 仅作AI失败时的后备
-            new() { Name = "美图素材(后备)", ResourceType = "LocalFolder",
-                     Path = @"F:\传道 & 美图\插图素材",
-                     FileFilter = "*.jpg;*.jpeg;*.png;*.webp",
-                     Description = "AI图像生成失败时作为后备配图" },
-            // 视频素材
             new() { Name = "视频号输出", ResourceType = "LocalFolder",
                      Path = GetJsonValue("Defaults:OutputVideoRoot"),
                      FileFilter = "*.mp4;*.mov", Description = "短视频输出目录" },
-            // 网络资源
-            new() { Name = "每日灵粮(RSS)", ResourceType = "RssFeed",
-                     Path = "https://www.todaydevotional.com/rss",
-                     FileFilter = "", Description = "每日灵修文章RSS订阅" },
-            new() { Name = "圣经在线查询", ResourceType = "WebUrl",
-                     Path = "https://www.wordproject.org/bibles/gb/",
-                     FileFilter = "", Description = "在线圣经多版本对照查询" },
         };
 
         var toAdd = defaults.Where(d => !existingNames.Contains(d.Name)).ToList();
