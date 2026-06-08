@@ -132,36 +132,57 @@
         </Grid>
 
         <!-- 输出区 -->
-        <TabControl Grid.Row="4" x:Name="TabOutput" Margin="0,0,0,8">
-            <TabItem Header="AI生成">
+        <Grid Grid.Row="4" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="250"/>
+            </Grid.ColumnDefinitions>
+
+            <TabControl Grid.Column="0" x:Name="TabOutput">
+                <TabItem Header="AI生成">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4">
+                            <ProgressBar x:Name="PbProgress" Width="150" Height="8"
+                                         Margin="0,0,8,0" Minimum="0" Maximum="100" Value="0"/>
+                            <Button x:Name="BtnLearn" Content="审核完成 ✓" Width="90" Height="24"
+                                    FontSize="11" Style="{StaticResource PrimaryButton}" Background="#6c5ce7"
+                                    Click="BtnLearn_Click"/>
+                            <TextBlock x:Name="TbLearnCount" Text="" FontSize="11"
+                                       Foreground="#6c5ce7" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBox Grid.Row="1" x:Name="TbOutput" TextWrapping="Wrap"
+                                 AcceptsReturn="True" VerticalScrollBarVisibility="Visible"
+                                 FontSize="14" BorderThickness="0"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="净化后">
+                    <TextBox x:Name="TbSanitized" TextWrapping="Wrap"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Visible"
+                             FontSize="14" BorderThickness="0"/>
+                </TabItem>
+            </TabControl>
+
+            <!-- 右侧步骤面板 -->
+            <Border Grid.Column="1" Background="#1a1a2e" CornerRadius="4" Padding="6" Margin="4,0,0,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4">
-                        <TextBlock x:Name="TbProgress" Text="等待开始..." FontSize="12"
-                                   Foreground="#888" VerticalAlignment="Center"/>
-                        <ProgressBar x:Name="PbProgress" Width="200" Height="10"
-                                     Margin="12,0,0,0" Minimum="0" Maximum="100" Value="0"/>
-                        <Button x:Name="BtnLearn" Content="审核完成 ✓" Width="100" Height="26"
-                                FontSize="11" Margin="20,0,0,0"
-                                Style="{StaticResource PrimaryButton}" Background="#6c5ce7"
-                                Click="BtnLearn_Click" ToolTip="对比修改后学习你的写作风格"/>
-                        <TextBlock x:Name="TbLearnCount" Text="" FontSize="11"
-                                   Foreground="#6c5ce7" Margin="10,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <TextBox Grid.Row="1" x:Name="TbOutput" TextWrapping="Wrap"
-                             AcceptsReturn="True" VerticalScrollBarVisibility="Visible"
-                             FontSize="14" BorderThickness="0"/>
+                    <TextBlock Grid.Row="0" Text="Agent 步骤" Foreground="#7ec8a0"
+                               FontSize="11" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBox Grid.Row="1" x:Name="TbProgress" IsReadOnly="True"
+                             Background="Transparent" Foreground="#a0c4ff"
+                             FontFamily="Consolas" FontSize="10" BorderThickness="0"
+                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                             Text="等待开始..."/>
                 </Grid>
-            </TabItem>
-            <TabItem Header="净化后">
-                <TextBox x:Name="TbSanitized" TextWrapping="Wrap"
-                         AcceptsReturn="True" VerticalScrollBarVisibility="Visible"
-                         FontSize="14" BorderThickness="0"/>
-            </TabItem>
-        </TabControl>
+            </Border>
+        </Grid>
 
         <!-- 底部操作栏 -->
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">

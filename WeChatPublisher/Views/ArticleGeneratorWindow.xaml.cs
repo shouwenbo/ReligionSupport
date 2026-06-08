@@ -13,6 +13,7 @@ public partial class ArticleGeneratorWindow : Window
     private bool _loaded;
     private readonly SensitiveWordService _sensitiveService = new();
     private readonly McpService _mcpService = new();
+    private readonly AIImageService _aiImageService = new();
 
     public ArticleGeneratorWindow(int? taskId = null)
     {
@@ -235,7 +236,7 @@ public partial class ArticleGeneratorWindow : Window
             var aiService = new AIService(_sensitiveService);
             var promptBuilder = new PromptBuilderService();
             var agentLoop = new AgentLoop(aiService, _sensitiveService,
-                promptBuilder, AppSettings.Instance, _mcpService);
+                promptBuilder, AppSettings.Instance, _mcpService, _aiImageService);
 
             TbProgress.Text = ""; // 清空上次日志
             TbOutput.Text = "";    // 清空输出区
