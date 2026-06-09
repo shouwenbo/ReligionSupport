@@ -176,7 +176,7 @@ public partial class ArticleGeneratorWindow : Window
         if (textCfg != null)
             parts.Add($"文本: {textCfg.ProviderName} ({textCfg.ModelName})");
         if (imgCfg != null)
-            parts.Add($"配图: {imgCfg.ProviderName}");
+            parts.Add($"配图: {imgCfg.ProviderName}({imgCfg.ModelName})");
 
         TbAiSummary.Text = string.Join("  |  ", parts);
         if (parts.Count == 0)
@@ -411,17 +411,55 @@ public partial class ArticleGeneratorWindow : Window
             contactImage = null;
 
         BtnPublish.IsEnabled = false;
-        BtnPublish.Content = "排版发布中...";
+        BtnPublish.Content = "生成配图中...";
         try
         {
-            // 1. 智能排版
+            // 1. 用TokenHub生成配图
+            string? imagePath1 = null, imagePath2 = null;
+            try
+            {
+                var imgService = new AIImageService();
+                var imgPrompt = $"为信仰灵修文章生成温馨配图, 无文字, 温暖色调, 柔和画面\n{text[..Math.Min(text.Length, 500)]}";
+                var imgDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Images");
+                Directory.CreateDirectory(imgDir);
+
+                var bytes = await imgService.GenerateImageAsync(imgPrompt);
+                imagePath1 = Path.Combine(imgDir, $"pub_{DateTime.Now:HHmmss}_1.png");
+                await File.WriteAllBytesAsync(imagePath1, bytes);
+
+                bytes = await imgService.GenerateImageAsync(imgPrompt + " 另一张");
+                imagePath2 = Path.Combine(imgDir, $"pub_{DateTime.Now:HHmmss}_2.png");
+                await File.WriteAllBytesAsync(imagePath2, bytes);
+
+                BtnPublish.Content = "智能排版中...";
+            }
+            catch (Exception ex) { Logger.Warn($"配图生成失败, 继续无图发布: {ex.Message}"); }
+
+            // 2. 智能排版(传入真实图片)
             var layout = new LayoutService();
             var learner = new StyleLearningService();
             var persona = learner.BuildPersonaInjection("article");
             var formatted = await layout.FormatArticleAsync(text, "article",
-                persona, null, contactImage);
+                persona, imagePath1, contactImage);
 
-            // 2. 提取标题
+            // 替换占位符为真实图片
+            var placeholder = "<div class='insert-image'>此处配图</div>";
+            if (imagePath1 != null)
+            {
+                var idx = formatted.IndexOf(placeholder);
+                if (idx >= 0) formatted = formatted[..idx]
+                    + $"<img src='{imagePath1}' style='width:100%;border-radius:8px;margin:16px 0;'/>"
+                    + formatted[(idx + placeholder.Length)..];
+            }
+            if (imagePath2 != null)
+            {
+                var idx = formatted.IndexOf(placeholder);
+                if (idx >= 0) formatted = formatted[..idx]
+                    + $"<img src='{imagePath2}' style='width:100%;border-radius:8px;margin:16px 0;'/>"
+                    + formatted[(idx + placeholder.Length)..];
+            }
+
+            // 3. 提取标题
             var title = "AI生成文章";
             var titleMatch = System.Text.RegularExpressions.Regex.Match(
                 text, @"^#+\s*(.+)", System.Text.RegularExpressions.RegexOptions.Multiline);
