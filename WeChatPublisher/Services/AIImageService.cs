@@ -107,12 +107,14 @@ public class AIImageService
         var json = await resp.Content.ReadAsStringAsync(ct);
 
         if (!resp.IsSuccessStatusCode)
+        {
+            var requestBody = JsonSerializer.Serialize(body);
             throw new InvalidOperationException(
                 $"TokenHub {resp.StatusCode}\n" +
-                $"完整请求: POST {baseUrl}/images/generations\n" +
-                $"模型: {model}\n尺寸: {size}\n" +
-                $"Prompt: {prompt[..Math.Min(prompt.Length, 80)]}...\n" +
+                $"请求: POST {baseUrl}/images/generations\n" +
+                $"Body: {requestBody}\n" +
                 $"服务端返回: {json}");
+        }
 
         using var doc = JsonDocument.Parse(json);
         var url = doc.RootElement.GetProperty("data")[0].GetProperty("url").GetString()!;
