@@ -17,15 +17,9 @@ public class FinalizeStep : IAgentStep
     {
         var text = context.State.GetValueOrDefault("generated_text", "");
 
-        // Last resort: auto-sanitize if final round had issues
-        if (context.CurrentRound >= context.MaxRounds)
-        {
-            if (_sensitiveService.HasForcedMatches(text, out var count) && count > 0)
-            {
-                text = _sensitiveService.Sanitize(text);
-                context.State["auto_sanitized"] = "true";
-            }
-        }
+        // 始终输出净化后的文本
+        if (_sensitiveService.HasForcedMatches(text, out _))
+            text = _sensitiveService.Sanitize(text);
 
         context.FinalText = text;
         return Task.FromResult(new StepResult

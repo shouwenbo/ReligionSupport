@@ -138,33 +138,24 @@
                 <ColumnDefinition Width="250"/>
             </Grid.ColumnDefinitions>
 
-            <TabControl Grid.Column="0" x:Name="TabOutput">
-                <TabItem Header="AI生成">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4">
-                            <ProgressBar x:Name="PbProgress" Width="150" Height="8"
-                                         Margin="0,0,8,0" Minimum="0" Maximum="100" Value="0"/>
-                            <Button x:Name="BtnLearn" Content="审核完成 ✓" Width="90" Height="24"
-                                    FontSize="11" Style="{StaticResource PrimaryButton}" Background="#6c5ce7"
-                                    Click="BtnLearn_Click"/>
-                            <TextBlock x:Name="TbLearnCount" Text="" FontSize="11"
-                                       Foreground="#6c5ce7" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <TextBox Grid.Row="1" x:Name="TbOutput" TextWrapping="Wrap"
-                                 AcceptsReturn="True" VerticalScrollBarVisibility="Visible"
-                                 FontSize="14" BorderThickness="0"/>
-                    </Grid>
-                </TabItem>
-                <TabItem Header="净化后">
-                    <TextBox x:Name="TbSanitized" TextWrapping="Wrap"
-                             AcceptsReturn="True" VerticalScrollBarVisibility="Visible"
-                             FontSize="14" BorderThickness="0"/>
-                </TabItem>
-            </TabControl>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4">
+                    <ProgressBar x:Name="PbProgress" Width="150" Height="8"
+                                 Margin="0,0,8,0" Minimum="0" Maximum="100" Value="0"/>
+                    <Button x:Name="BtnLearn" Content="审核完成 ✓" Width="90" Height="24"
+                            FontSize="11" Style="{StaticResource PrimaryButton}" Background="#6c5ce7"
+                            Click="BtnLearn_Click"/>
+                    <TextBlock x:Name="TbLearnCount" Text="" FontSize="11"
+                               Foreground="#6c5ce7" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBox Grid.Row="1" x:Name="TbOutput" TextWrapping="Wrap"
+                         AcceptsReturn="True" VerticalScrollBarVisibility="Visible"
+                         FontSize="14" BorderThickness="0"/>
+            </Grid>
 
             <!-- 右侧步骤面板 -->
             <Border Grid.Column="1" Background="#1a1a2e" CornerRadius="4" Padding="6" Margin="4,0,0,0">

@@ -199,7 +199,7 @@ public partial class ArticleGeneratorWindow : Window
             if (task?.FinalText != null)
             {
                 TbOutput.Text = task.FinalText;
-                TbSanitized.Text = _sensitiveService.Sanitize(task.FinalText);
+                TbOutput.Text = _sensitiveService.Sanitize(task.FinalText);
             }
         }
         catch { }
@@ -228,7 +228,6 @@ public partial class ArticleGeneratorWindow : Window
             BtnStop.Visibility = Visibility.Visible;
             PbProgress.Value = 0;
             TbProgress.Text = "准备中...";
-            TabOutput.SelectedIndex = 0;
 
             _cts = new CancellationTokenSource();
             var context = BuildContext();
@@ -258,7 +257,7 @@ public partial class ArticleGeneratorWindow : Window
             {
                 _lastGeneratedText = result.FinalText;
                 TbOutput.Text = result.FinalText;
-                TbSanitized.Text = _sensitiveService.Sanitize(result.FinalText);
+                TbOutput.Text = _sensitiveService.Sanitize(result.FinalText);
                 PbProgress.Value = 100;
                 TbProgress.Text = "生成完成! 请在【AI生成】标签中修改，修改后点击【审核完成】";
             }
@@ -377,7 +376,7 @@ public partial class ArticleGeneratorWindow : Window
 
     private void BtnSaveDraft_Click(object sender, RoutedEventArgs e)
     {
-        var text = TbSanitized.Text.Length > 0 ? TbSanitized.Text : TbOutput.Text;
+        var text = TbOutput.Text;
         if (string.IsNullOrWhiteSpace(text))
         {
             MessageBox.Show("没有可保存的内容", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -398,7 +397,7 @@ public partial class ArticleGeneratorWindow : Window
 
     private async void BtnPublish_Click(object sender, RoutedEventArgs e)
     {
-        var text = TbSanitized.Text.Length > 0 ? TbSanitized.Text : TbOutput.Text;
+        var text = TbOutput.Text;
         if (string.IsNullOrWhiteSpace(text))
         {
             MessageBox.Show("没有可发布的内容", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -498,7 +497,7 @@ public partial class ArticleGeneratorWindow : Window
 
     private void BtnCopy_Click(object sender, RoutedEventArgs e)
     {
-        var text = TbSanitized.Text.Length > 0 ? TbSanitized.Text : TbOutput.Text;
+        var text = TbOutput.Text;
         if (!string.IsNullOrWhiteSpace(text))
         {
             Clipboard.SetText(text);
