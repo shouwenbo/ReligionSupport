@@ -241,16 +241,16 @@ public partial class ArticleGeneratorWindow : Window
             TbProgress.Text = ""; // 清空上次日志
             TbOutput.Text = "";    // 清空输出区
             agentLoop.OnLog += (level, msg) =>
-                Dispatcher.Invoke(() =>
+                Dispatcher.BeginInvoke(() =>
                 {
                     var icon = level switch { "error" => "✗", "warn" => "⚠", _ => "✓" };
                     TbProgress.AppendText($"{icon} {msg}\n");
                     TbProgress.ScrollToEnd();
                 });
             agentLoop.OnTextChunk += (chunk) =>
-                Dispatcher.Invoke(() => TbOutput.AppendText(chunk));
+                Dispatcher.BeginInvoke(() => TbOutput.AppendText(chunk));
             agentLoop.OnStepExecuted += (log) =>
-                Dispatcher.Invoke(() => PbProgress.Value = Math.Min(100, PbProgress.Value + 15));
+                Dispatcher.BeginInvoke(() => PbProgress.Value = Math.Min(100, PbProgress.Value + 15));
 
             var result = await agentLoop.ExecuteAsync(context, _cts.Token);
 
