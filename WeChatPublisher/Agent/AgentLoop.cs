@@ -50,8 +50,6 @@ public class AgentLoop
 
                 // Skip ReviseStep unless needed
                 if (step is ReviseStep && !needsRevision) continue;
-                // Skip FinalizeStep unless we're done
-                if (step is FinalizeStep && needsRevision && round < context.MaxRounds) continue;
 
                 OnLog?.Invoke("info", $"执行步骤: {step.Name}");
 
