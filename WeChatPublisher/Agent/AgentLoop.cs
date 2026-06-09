@@ -87,9 +87,10 @@ public class AgentLoop
                 catch (Exception ex)
                 {
                     log.Status = "failed";
-                    log.ErrorMessage = ex.Message;
+                    log.ErrorMessage = ex.ToString();
                     log.CompletedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                    OnLog?.Invoke("error", $"  ✗ {step.Name} 失败: {ex.Message}");
+                    Services.Logger.Error($"{step.Name} 失败", ex);
+                    OnLog?.Invoke("error", $"  ✗ {step.Name} 失败: {ex.Message} (详见app.log)");
                     OnStepExecuted?.Invoke(log);
                 }
             }
