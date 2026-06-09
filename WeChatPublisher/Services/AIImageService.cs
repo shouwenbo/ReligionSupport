@@ -107,7 +107,12 @@ public class AIImageService
         var json = await resp.Content.ReadAsStringAsync(ct);
 
         if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException($"图像API 错误: {resp.StatusCode} - {json}");
+            throw new InvalidOperationException(
+                $"TokenHub {resp.StatusCode}\n" +
+                $"端点: {baseUrl}/images/generations\n" +
+                $"模型: {model}\n" +
+                $"尺寸: {size}\n" +
+                $"错误: {json}");
 
         using var doc = JsonDocument.Parse(json);
         var url = doc.RootElement.GetProperty("data")[0].GetProperty("url").GetString()!;
