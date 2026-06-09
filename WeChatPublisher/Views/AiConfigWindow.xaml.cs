@@ -200,16 +200,12 @@ public partial class AiConfigWindow : Window
         }
         catch (Exception ex)
         {
-            // 展开所有InnerException获取完整诊断信息
             var allMsg = ex.Message;
             var inner = ex.InnerException;
-            while (inner != null)
-            {
-                allMsg += "\n→ " + inner.Message;
-                inner = inner.InnerException;
-            }
-            Clipboard.SetText(allMsg); // 自动复制到剪贴板
-            MessageBox.Show(allMsg, "测试失败 (已复制到剪贴板)",
+            while (inner != null) { allMsg += "\n→ " + inner.Message; inner = inner.InnerException; }
+
+            Logger.Error($"图像AI测试失败\n{allMsg}\n---");
+            MessageBox.Show($"{allMsg}\n\n详情已写入 app.log", "测试失败",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
