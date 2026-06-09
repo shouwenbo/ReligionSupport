@@ -36,7 +36,7 @@ public class AIImageService
         int logoAdd = config?.LogoAdd ?? 0;
         return provider switch
         {
-            "TokenHub" => await GenerateViaTokenHub(baseUrl, model, prompt, size, imageCount, ct),
+            "TokenHub" => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, logoAdd, ct),
             "HunyuanImage" => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, logoAdd, ct),
             "DALLE" => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, logoAdd, ct),
             _ => await GenerateViaDalle(baseUrl, model, prompt, size, imageCount, logoAdd, ct)
@@ -109,10 +109,10 @@ public class AIImageService
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException(
                 $"TokenHub {resp.StatusCode}\n" +
-                $"端点: {baseUrl}/images/generations\n" +
-                $"模型: {model}\n" +
-                $"尺寸: {size}\n" +
-                $"错误: {json}");
+                $"完整请求: POST {baseUrl}/images/generations\n" +
+                $"模型: {model}\n尺寸: {size}\n" +
+                $"Prompt: {prompt[..Math.Min(prompt.Length, 80)]}...\n" +
+                $"服务端返回: {json}");
 
         using var doc = JsonDocument.Parse(json);
         var url = doc.RootElement.GetProperty("data")[0].GetProperty("url").GetString()!;
