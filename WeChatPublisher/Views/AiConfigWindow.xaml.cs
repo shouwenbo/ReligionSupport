@@ -200,7 +200,16 @@ public partial class AiConfigWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"图像生成失败: {ex.Message}", "测试失败",
+            // 展开所有InnerException获取完整诊断信息
+            var allMsg = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                allMsg += "\n→ " + inner.Message;
+                inner = inner.InnerException;
+            }
+            Clipboard.SetText(allMsg); // 自动复制到剪贴板
+            MessageBox.Show(allMsg, "测试失败 (已复制到剪贴板)",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
