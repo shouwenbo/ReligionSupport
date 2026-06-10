@@ -11,6 +11,7 @@ public class McpResourceConfig
     public string ResourceType { get; set; } = "LocalFolder";
     public string Path { get; set; } = "";
     [SugarColumn(IsNullable = true)] public string? FileFilter { get; set; } = "*.*";
+    [SugarColumn(IsNullable = true)] public string? ExcludeFolders { get; set; }
     [SugarColumn(IsNullable = true)] public string? Description { get; set; }
     [SugarColumn(IsNullable = true)] public string? LastCachedAt { get; set; }
     public int CachedFileCount { get; set; }

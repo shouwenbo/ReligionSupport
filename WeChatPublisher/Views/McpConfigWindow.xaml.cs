@@ -29,6 +29,7 @@ public partial class McpConfigWindow : Window
         TxtResName.Text = res.Name;
         TxtResPath.Text = res.Path;
         TxtResFilter.Text = res.FileFilter ?? "*.*";
+        TxtExcludeFolders.Text = res.ExcludeFolders ?? "";
         SelectTag(CmbResType, res.ResourceType);
     }
 
@@ -58,6 +59,7 @@ public partial class McpConfigWindow : Window
         TxtResName.Text = res.Name;
         TxtResPath.Text = res.Path;
         TxtResFilter.Text = res.FileFilter ?? "*.*";
+        TxtExcludeFolders.Text = res.ExcludeFolders ?? "";
         SelectTag(CmbResType, res.ResourceType);
     }
 
@@ -148,6 +150,7 @@ public partial class McpConfigWindow : Window
             ResourceType = (CmbResType.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "LocalFolder",
             Path = TxtResPath.Text.Trim(),
             FileFilter = TxtResFilter.Text.Trim(),
+            ExcludeFolders = TxtExcludeFolders.Text.Trim(),
         };
 
         if (_editingId > 0) config.Id = _editingId;

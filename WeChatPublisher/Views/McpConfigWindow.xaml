@@ -68,6 +68,10 @@
 
                 <Label Grid.Row="3" Grid.Column="0" Content="文件过滤:"/>
                 <TextBox Grid.Row="3" Grid.Column="1" x:Name="TxtResFilter" Text="*.*" Margin="0,2"/>
+
+                <Label Grid.Row="4" Grid.Column="0" Content="屏蔽目录:"/>
+                <TextBox Grid.Row="4" Grid.Column="1" x:Name="TxtExcludeFolders" Margin="0,2"
+                         ToolTip="分号分隔的目录名, 扫描时自动跳过"/>
             </Grid>
         </GroupBox>
 

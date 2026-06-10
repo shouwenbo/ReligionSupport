@@ -40,6 +40,11 @@
                     <ListBox Grid.Row="1" x:Name="LbMaterials" Background="White"
                              BorderThickness="0" FontSize="12" HorizontalContentAlignment="Stretch"
                              SelectionMode="Multiple">
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="屏蔽此文件夹" Click="MenuExcludeFolder_Click"/>
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
                                 <Setter Property="Padding" Value="6,3"/>

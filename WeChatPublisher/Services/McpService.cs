@@ -37,7 +37,9 @@ public class McpService
         if (!Directory.Exists(resource.Path)) return [];
 
         var filter = string.IsNullOrWhiteSpace(resource.FileFilter) ? "*.*" : resource.FileFilter;
-        var allFiles = SafeEnumerateFiles(resource.Path, filter, maxFiles * 10);
+        var excludes = resource.ExcludeFolders?.Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim()).Where(p => p.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+        var allFiles = SafeEnumerateFiles(resource.Path, filter, maxFiles * 10, excludes);
 
         var supported = allFiles
             .Where(f =>
@@ -289,7 +291,8 @@ public class McpService
         "node_modules", ".git", "obj", "bin", ".vs"
     };
 
-    private static List<string> SafeEnumerateFiles(string root, string filter, int maxFiles)
+    private static List<string> SafeEnumerateFiles(string root, string filter, int maxFiles,
+        HashSet<string>? excludeDirs = null)
     {
         var results = new List<string>();
         var patterns = filter.Split(';', StringSplitOptions.RemoveEmptyEntries);
@@ -311,7 +314,8 @@ public class McpService
                 exploredDirs++;
 
                 var dirName = Path.GetFileName(dir);
-                if (_skipFolders.Contains(dirName) || (dirName.StartsWith("$") && dirName.Length > 1))
+                if (_skipFolders.Contains(dirName) || (dirName.StartsWith("$") && dirName.Length > 1)
+                    || (excludeDirs != null && excludeDirs.Contains(dirName)))
                     continue;
 
                 try

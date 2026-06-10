@@ -151,6 +151,26 @@ public partial class ArticleGeneratorWindow : Window
             MessageBox.Show(item.Data, "素材全文", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
+    private void MenuExcludeFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (LbMaterials.SelectedItem is not SelectableItem item) return;
+        var folder = Path.GetDirectoryName(item.Data);
+        if (string.IsNullOrWhiteSpace(folder)) return;
+        var dirName = Path.GetFileName(folder);
+        if (MessageBox.Show($"屏蔽文件夹「{dirName}」?\n之后刷新将不再包含此目录。",
+            "确认屏蔽", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+
+        var resources = _mcpService.GetAllResources().FirstOrDefault(r => r.ResourceType == "LocalFolder");
+        if (resources == null) return;
+        var current = resources.ExcludeFolders ?? "";
+        var excludes = current.Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        excludes.Add(dirName);
+        resources.ExcludeFolders = string.Join(";", excludes);
+        _mcpService.SaveResource(resources);
+        _ = RefreshMaterialsAsync();
+    }
+
     private void LbVerses_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (LbVerses.SelectedItem is SelectableItem item)
