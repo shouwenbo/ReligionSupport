@@ -257,9 +257,11 @@ public partial class ArticleGeneratorWindow : Window
             {
                 _lastGeneratedText = result.FinalText;
                 TbOutput.Text = result.FinalText;
-                TbOutput.Text = _sensitiveService.Sanitize(result.FinalText);
                 PbProgress.Value = 100;
-                TbProgress.Text = "生成完成! 请在【AI生成】标签中修改，修改后点击【审核完成】";
+                TbProgress.Text = "生成完成!";
+                BtnStart.Content = "重新生成";
+                PanelMaterials.Visibility = Visibility.Collapsed;
+                PanelSettings.Visibility = Visibility.Collapsed;
             }
         }
         catch (OperationCanceledException)

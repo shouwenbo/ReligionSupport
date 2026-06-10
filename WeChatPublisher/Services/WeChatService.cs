@@ -23,8 +23,9 @@ public class WeChatService
 
         var config = account ?? _settings.GetActiveWeChatConfig();
         if (config == null) throw new InvalidOperationException("未配置微信公众号");
-
-        var appSecret = ConfigEncryptionService.Decrypt(config.AppSecretEncrypted!);
+        if (string.IsNullOrWhiteSpace(config.AppId) || string.IsNullOrWhiteSpace(config.AppSecretEncrypted))
+            throw new InvalidOperationException("请先填写 AppID 和 AppSecret");
+        var appSecret = ConfigEncryptionService.Decrypt(config.AppSecretEncrypted);
         var url = $"{config.ApiBaseUrl}/cgi-bin/token?grant_type=client_credential&appid={config.AppId}&secret={appSecret}";
 
         var response = await _httpClient.GetStringAsync(url);
