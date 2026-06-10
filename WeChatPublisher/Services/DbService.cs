@@ -61,5 +61,32 @@ public class DbService
                 ValueType TEXT DEFAULT 'string',
                 Description TEXT
             )");
+        MigrateSchema(db);
+    }
+
+    /// <summary>增量迁移: 为已存在的表添加新列, 不丢失数据</summary>
+    private static void MigrateSchema(SqlSugarClient db)
+    {
+        // 2024-06: WeChatConfig 新增 ContactImage/CoverPrompt
+        TryAddColumn(db, "WeChatConfigs", "ContactImage", "TEXT");
+        TryAddColumn(db, "WeChatConfigs", "CoverPrompt", "TEXT");
+        // 2024-06: AiConfig 新增 ImageSize/ImageCount/LogoAdd
+        TryAddColumn(db, "AiConfigs", "ImageSize", "TEXT");
+        TryAddColumn(db, "AiConfigs", "ImageCount", "INTEGER DEFAULT 1");
+        TryAddColumn(db, "AiConfigs", "LogoAdd", "INTEGER DEFAULT 0");
+    }
+
+    private static void TryAddColumn(SqlSugarClient db, string table, string column, string type)
+    {
+        try
+        {
+            var exists = db.Ado.GetInt($"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name='{column}'") > 0;
+            if (!exists)
+            {
+                db.Ado.ExecuteCommand($"ALTER TABLE [{table}] ADD COLUMN [{column}] {type}");
+                Logger.Info($"DB迁移: {table}.{column} ({type}) 已添加");
+            }
+        }
+        catch (Exception ex) { Logger.Warn($"DB迁移 {table}.{column} 跳过: {ex.Message}"); }
     }
 }
