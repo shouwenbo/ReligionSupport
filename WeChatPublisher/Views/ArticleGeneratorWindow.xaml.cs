@@ -81,7 +81,7 @@ public partial class ArticleGeneratorWindow : Window
             {
                 foreach (var res in resources)
                 {
-                    var samples = _mcpService.SampleFiles(res.Id, 12, 300, bypassCache: true);
+                    var samples = _mcpService.SampleFiles(res.Id, 30, 300, bypassCache: true);
                     foreach (var s in samples)
                     {
                         var source = s.FileName;
@@ -120,7 +120,7 @@ public partial class ArticleGeneratorWindow : Window
             await Task.Run(() =>
             {
                 var bible = new BibleService(biblePath);
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 30; i++)
                 {
                     try
                     {
