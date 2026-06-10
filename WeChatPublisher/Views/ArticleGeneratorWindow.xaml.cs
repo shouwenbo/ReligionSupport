@@ -206,7 +206,8 @@ public partial class ArticleGeneratorWindow : Window
                 BtnToggleSettings.Visibility = Visibility.Collapsed;
                 PanelMaterials.Visibility = Visibility.Collapsed;
                 PanelSettings.Visibility = Visibility.Collapsed;
-                BtnStart.Visibility = Visibility.Visible;
+                // 旧草稿没有排版，自动跑一次
+                _ = Task.Run(() => Dispatcher.Invoke(() => RunLayoutAndGenerateImages(task.FinalText)));
             }
         }
         catch { }
