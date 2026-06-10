@@ -203,7 +203,7 @@ public class McpService
             var key = secrets?.GetValueOrDefault("TianshangMcpKey");
             if (string.IsNullOrWhiteSpace(key)) return results;
             var client = new HttpMcpClient(resource.Path, key);
-            var paragraphs = client.GetRandomParagraphs(8).Result;
+            var paragraphs = Task.Run(() => client.GetRandomParagraphs(8)).GetAwaiter().GetResult();
             foreach (var p in paragraphs.Take(maxFiles))
                 if (p.Length > 20)
                     results.Add(new FileSample { FilePath = resource.Path, FileName = "话语广场",
@@ -452,7 +452,7 @@ public class DocxTemplateService
             var key = secrets?.GetValueOrDefault("TianshangMcpKey");
             if (string.IsNullOrWhiteSpace(key)) return results;
             var client = new HttpMcpClient(resource.Path, key);
-            var paragraphs = client.GetRandomParagraphs(8).Result;
+            var paragraphs = Task.Run(() => client.GetRandomParagraphs(8)).GetAwaiter().GetResult();
             foreach (var p in paragraphs.Take(maxFiles))
                 if (p.Length > 20)
                     results.Add(new FileSample { FilePath = resource.Path, FileName = "话语广场",

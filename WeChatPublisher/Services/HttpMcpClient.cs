@@ -45,9 +45,10 @@ public class HttpMcpClient
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        // MCP JSON-RPC response
+        // MCP JSON-RPC response - 尝试多种解析方式
         if (root.TryGetProperty("result", out var result))
         {
+            // 方式1: result.content[0].text (JSON-RPC 标准)
             if (result.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
             {
                 foreach (var item in content.EnumerateArray())
@@ -55,10 +56,13 @@ public class HttpMcpClient
                     if (item.TryGetProperty("text", out var text))
                     {
                         var raw = text.GetString() ?? "";
-                        return JsonDocument.Parse(raw).RootElement;
+                        try { return JsonDocument.Parse(raw).RootElement; }
+                        catch { return JsonDocument.Parse($"\"{raw}\"").RootElement; }
                     }
                 }
             }
+            // 方式2: result 本身就是数据
+            Logger.Info($"MCP {method} 通用返回: {result.ToString()[..Math.Min(200, result.ToString().Length)]}");
             return result;
         }
 
