@@ -82,16 +82,18 @@ public partial class ArticleGeneratorWindow : Window
                 foreach (var res in resources)
                 {
                     var samples = _mcpService.SampleFiles(res.Id, 30, 300, bypassCache: true);
+                    var icon = res.ResourceType switch { "HttpMcp" => "🌐", "RssFeed" => "📡", _ => "📁" };
+                    var rname = res.Name.Length > 12 ? res.Name[..12] : res.Name;
+                    var stype = res.ResourceType switch { "HttpMcp" => "mcp", "RssFeed" => "rss", _ => "file" };
                     foreach (var s in samples)
                     {
-                        var source = s.FileName;
-                        if (source.Length > 20) source = source[..18] + "..";
                         var preview = s.Content.Replace('\n', ' ').Replace('\r', ' ').Replace("  ", " ").Trim();
-                        if (preview.Length > 60) preview = preview[..60] + "...";
+                        if (preview.Length > 55) preview = preview[..55] + "...";
                         items.Add(new SelectableItem
                         {
-                            Display = $"[{source}] {preview}",
+                            Display = $"{icon} [{rname}] {preview}",
                             Data = s.FullContent,
+                            SourceType = stype,
                             IsSelected = false
                         });
                     }
@@ -392,5 +394,12 @@ public class SelectableItem
 {
     public string Display { get; set; } = "";
     public string Data { get; set; } = "";
+    public string SourceType { get; set; } = "file";
     public bool IsSelected { get; set; }
+    public string SourceIcon => SourceType switch
+    {
+        "mcp" => "🌐",
+        "rss" => "📡",
+        _ => "📁"
+    };
 }

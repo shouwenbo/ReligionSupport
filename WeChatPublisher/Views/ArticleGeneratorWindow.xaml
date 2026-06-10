@@ -53,12 +53,18 @@
                         </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center"
-                                              Margin="0,0,6,0"/>
-                                    <TextBlock Text="{Binding Display}" FontSize="12"
-                                               TextTrimming="CharacterEllipsis" MaxWidth="400"/>
-                                </StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}"
+                                              VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SourceIcon}" FontSize="11"
+                                               VerticalAlignment="Center" Width="18"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Display}" FontSize="12"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -86,12 +92,18 @@
                         </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center"
-                                              Margin="0,0,6,0"/>
-                                    <TextBlock Text="{Binding Display}" FontSize="12"
-                                               TextTrimming="CharacterEllipsis" MaxWidth="400"/>
-                                </StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}"
+                                              VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SourceIcon}" FontSize="11"
+                                               VerticalAlignment="Center" Width="18"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Display}" FontSize="12"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
