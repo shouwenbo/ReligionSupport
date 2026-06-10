@@ -46,7 +46,7 @@ public partial class ArticleGeneratorWindow : Window
         }
     }
 
-    private void AutoScanMcp()
+    private async void AutoScanMcp()
     {
         CmbMcpResource.Items.Clear();
         var resources = _mcpService.GetAllResources();
@@ -54,9 +54,27 @@ public partial class ArticleGeneratorWindow : Window
             CmbMcpResource.Items.Add(new ComboBoxItem { Content = res.Name, Tag = res.Id });
         if (CmbMcpResource.Items.Count > 0)
             CmbMcpResource.SelectedIndex = 0;
-        TbSourceSummary.Text = resources.Count > 0
-            ? $"已配置 {resources.Count} 个MCP资源, 点击刷新素材查看"
-            : "未配置MCP资源";
+
+        if (resources.Count == 0) { TbSourceSummary.Text = "未配置MCP资源"; return; }
+
+        TbSourceSummary.Text = "正在扫描MCP素材...";
+        await Task.Run(async () =>
+        {
+            var allFiles = new List<FileSample>();
+            foreach (var res in resources.Take(3))
+                allFiles.AddRange(_mcpService.SampleFiles(res.Id, 20, 300, bypassCache: true));
+            var count = allFiles.Count;
+            var types = allFiles.Select(s => Path.GetExtension(s.FilePath).ToLowerInvariant())
+                .Where(e => e.Length > 0).Distinct().ToList();
+            var cached = allFiles.Count(s => s.IsCached);
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                TbSourceSummary.Text = $"扫描完成: {count} 篇素材{(cached>0?$"({cached}已缓存)":"")} | {string.Join(", ",types.Take(5))}";
+                // 异步填充素材列表
+                _ = RefreshMaterialsAsync();
+            });
+        });
     }
 
     // ========== 素材选择 ==========
@@ -121,6 +139,12 @@ public partial class ArticleGeneratorWindow : Window
         }
         catch (Exception ex) { Logger.Warn($"刷新经文失败: {ex.Message}"); }
         finally { BtnRefreshVerses.IsEnabled = true; }
+    }
+
+    private void LbMaterials_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (LbMaterials.SelectedItem is SelectableItem item)
+            MessageBox.Show(item.Data, "素材段落全貌", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void BtnPreviewMaterial_Click(object sender, RoutedEventArgs e)
