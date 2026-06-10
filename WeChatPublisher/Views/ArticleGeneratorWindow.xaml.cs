@@ -479,10 +479,16 @@ public partial class ArticleGeneratorWindow : Window
 
     private async void BtnPublish_Click(object sender, RoutedEventArgs e)
     {
+        // 旧草稿没有排版数据，发前跑一次
         if (string.IsNullOrWhiteSpace(_formattedContent))
         {
-            MessageBox.Show("请先生成文章", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            if (string.IsNullOrWhiteSpace(TbOutput.Text))
+            {
+                MessageBox.Show("没有可发布的内容", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            BtnPublish.Content = "排版中...";
+            await RunLayoutAndGenerateImages(TbOutput.Text);
         }
 
         BtnPublish.IsEnabled = false;
