@@ -36,9 +36,14 @@ public partial class ArticleGeneratorWindow : Window
             AutoScanMcp();
             RefreshAiSummary();
             RefreshPersonaCount();
-            _ = RefreshMaterialsAsync();
-            _ = RefreshVersesAsync();
             if (_taskId.HasValue) LoadExistingTask(_taskId.Value);
+            // 延迟加载素材和经文，避免阻塞UI渲染
+            Dispatcher.BeginInvoke(new Action(async () =>
+            {
+                await Task.Delay(200);
+                await RefreshMaterialsAsync();
+                await RefreshVersesAsync();
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
         catch (Exception ex)
         {

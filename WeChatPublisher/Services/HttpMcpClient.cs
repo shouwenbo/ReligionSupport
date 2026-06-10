@@ -39,6 +39,7 @@ public class HttpMcpClient
 
         var resp = await _http.SendAsync(request);
         var json = await resp.Content.ReadAsStringAsync();
+        Logger.Info($"MCP {method} 响应: {resp.StatusCode} {json[..Math.Min(200, json.Length)]}");
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException($"MCP {method} 失败: HTTP {resp.StatusCode} - {json[..Math.Min(200, json.Length)]}");
 
