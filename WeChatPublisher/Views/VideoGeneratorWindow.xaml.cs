@@ -11,6 +11,7 @@ public partial class VideoGeneratorWindow : Window
     private CancellationTokenSource? _cts;
     private string? _lastGeneratedText;
     private readonly McpService _mcp = new();
+    private string _generatedTitle1 = "", _generatedTitle2 = "";
 
     public VideoGeneratorWindow()
     {
@@ -49,6 +50,24 @@ public partial class VideoGeneratorWindow : Window
     private void CheckBox_Click(object s, RoutedEventArgs e) { }
     private void BtnRefreshMaterials_Click(object s, RoutedEventArgs e) => _ = RefreshMaterialsAsync();
     private void BtnRefreshVerses_Click(object s, RoutedEventArgs e) => _ = RefreshVersesAsync();
+
+    private async Task RefreshMaterialsAsync()
+    {
+        BtnRefreshMaterials.IsEnabled = false;
+        try { var items = await MaterialLoader.LoadMaterialsAsync(_mcp); LbMaterials.ItemsSource = items; TbMaterialCount.Text = $"{items.Count}篇"; }
+        catch { } finally { BtnRefreshMaterials.IsEnabled = true; }
+    }
+    private async Task RefreshVersesAsync()
+    {
+        BtnRefreshVerses.IsEnabled = false;
+        try
+        {
+            var biblePath = AppSettings.Instance.BibleDbPath;
+            if (File.Exists(biblePath)) { var items = await MaterialLoader.LoadVersesAsync(biblePath); LbVerses.ItemsSource = items; TbVerseCount.Text = $"{items.Count}条"; }
+        }
+        catch { } finally { BtnRefreshVerses.IsEnabled = true; }
+    }
+
     private void LbMaterials_MouseDoubleClick(object s, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (LbMaterials.SelectedItem is SelectableItem item)
@@ -60,51 +79,18 @@ public partial class VideoGeneratorWindow : Window
             new DetailWindow("随机经文", "来自: 圣经数据库", item.Data).Show();
     }
 
-    private async Task RefreshMaterialsAsync()
-    {
-        BtnRefreshMaterials.IsEnabled = false;
-        try
-        {
-            var items = await MaterialLoader.LoadMaterialsAsync(_mcp);
-            LbMaterials.ItemsSource = items;
-            TbMaterialCount.Text = $"{items.Count}篇";
-        }
-        catch { }
-        finally { BtnRefreshMaterials.IsEnabled = true; }
-    }
-
-    private async Task RefreshVersesAsync()
-    {
-        BtnRefreshVerses.IsEnabled = false;
-        try
-        {
-            var biblePath = AppSettings.Instance.BibleDbPath;
-            if (!File.Exists(biblePath)) return;
-            var items = await MaterialLoader.LoadVersesAsync(biblePath);
-            LbVerses.ItemsSource = items;
-            TbVerseCount.Text = $"{items.Count}条";
-        }
-        catch { }
-        finally { BtnRefreshVerses.IsEnabled = true; }
-    }
-
     private async void BtnStart_Click(object sender, RoutedEventArgs e)
     {
         try
         {
+            // 隐藏素材区，显示输出区
+            SetTopPanels(false);
             PanelOutput.Visibility = Visibility.Visible;
-            BtnStart.IsEnabled = false;
-            BtnStop.Visibility = Visibility.Visible;
-            TbOutput.Text = "";
-            TbProgress.Text = "准备中...\n";
+            BtnStart.IsEnabled = false; BtnStop.Visibility = Visibility.Visible;
+            TbOutput.Text = ""; TbProgress.Text = "准备中...\n";
 
             _cts = new CancellationTokenSource();
-            var context = new AgentContext
-            {
-                TaskType = "Video",
-                MaxRounds = 2,
-                Temperature = 0.7
-            };
+            var context = new AgentContext { TaskType = "Video", MaxRounds = 2, Temperature = 0.7 };
             var selectedSources = new List<string>();
             if (LbMaterials.ItemsSource is List<SelectableItem> mats)
                 selectedSources.AddRange(mats.Where(m => m.IsSelected).Select(m => m.Data));
@@ -126,12 +112,49 @@ public partial class VideoGeneratorWindow : Window
             {
                 _lastGeneratedText = result.FinalText;
                 TbOutput.Text = result.FinalText;
+                // 从生成内容中提取标题词
+                ExtractTitles(result.FinalText);
                 BtnStart.Visibility = Visibility.Collapsed;
             }
         }
-        catch (OperationCanceledException) { BtnStart.Visibility = Visibility.Visible; }
-        catch (Exception ex) { MessageBox.Show($"生成失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); BtnStart.Visibility = Visibility.Visible; }
+        catch (OperationCanceledException) { SetTopPanels(true); BtnStart.Visibility = Visibility.Visible; }
+        catch (Exception ex) { MessageBox.Show($"生成失败: {ex.Message}"); SetTopPanels(true); BtnStart.Visibility = Visibility.Visible; }
         finally { BtnStop.Visibility = Visibility.Collapsed; }
+    }
+
+    private void ExtractTitles(string text)
+    {
+        // 尝试从生成内容中提取标题（格式：标题: xxx 或 标题词）
+        var lines = text.Split('\n');
+        var titles = new List<string>();
+        foreach (var line in lines.Take(10))
+        {
+            var t = line.Trim().TrimStart('#', ' ', '【', '】');
+            if (t.StartsWith("标题") && t.Contains("："))
+            {
+                var parts = t.Split('：', 2);
+                if (parts.Length > 1 && parts[1].Length >= 2 && parts[1].Length <= 15)
+                    titles.Add(parts[1].Trim());
+            }
+        }
+        if (titles.Count >= 2)
+        {
+            _generatedTitle1 = titles[0]; _generatedTitle2 = titles[1];
+            TxtVideoTitle1.Text = _generatedTitle1;
+            TxtVideoTitle2.Text = _generatedTitle2;
+        }
+    }
+
+    private void SetTopPanels(bool visible)
+    {
+        var v = visible ? Visibility.Visible : Visibility.Collapsed;
+        TbSourceSummary.Visibility = v;
+        TbActiveAccount.Visibility = v;
+        LbMaterials.Visibility = v;
+        LbVerses.Visibility = v;
+        PanelParams.Visibility = v;
+        BtnRefreshMaterials.Visibility = v;
+        BtnRefreshVerses.Visibility = v;
     }
 
     private void BtnStop_Click(object s, RoutedEventArgs e) => _cts?.Cancel();
@@ -140,14 +163,8 @@ public partial class VideoGeneratorWindow : Window
     {
         var edited = TbOutput.Text;
         if (string.IsNullOrWhiteSpace(_lastGeneratedText) || _lastGeneratedText == edited) return;
-        try
-        {
-            var learner = new StyleLearningService();
-            await learner.AnalyzeEditsAsync(_lastGeneratedText, edited, "Video", CancellationToken.None);
-            _lastGeneratedText = edited;
-            MessageBox.Show("风格已学习", "完成", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex) { MessageBox.Show($"学习失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        try { await new StyleLearningService().AnalyzeEditsAsync(_lastGeneratedText, edited, "Video", CancellationToken.None); _lastGeneratedText = edited; MessageBox.Show("风格已学习"); }
+        catch (Exception ex) { MessageBox.Show($"学习失败: {ex.Message}"); }
     }
 
     private void BtnSaveDraft_Click(object s, RoutedEventArgs e)
@@ -156,12 +173,13 @@ public partial class VideoGeneratorWindow : Window
         if (string.IsNullOrWhiteSpace(text)) { MessageBox.Show("没有可保存的内容"); return; }
         AppSettings.Instance.Db.ExecuteInScope(db => db.Insertable(new VideoDraft
         {
-            TitleWord1 = TxtVideoTitle1.Text, TitleWord2 = TxtVideoTitle2.Text,
+            TitleWord1 = _generatedTitle1.Length > 0 ? _generatedTitle1 : TxtVideoTitle1.Text,
+            TitleWord2 = _generatedTitle2.Length > 0 ? _generatedTitle2 : TxtVideoTitle2.Text,
             Content = text, Status = "draft",
             CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
         }).ExecuteCommand());
-        MessageBox.Show("草稿已保存", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show("草稿已保存");
     }
 
     private async void BtnPublish_Click(object sender, RoutedEventArgs e)
@@ -170,12 +188,13 @@ public partial class VideoGeneratorWindow : Window
         if (string.IsNullOrWhiteSpace(text)) return;
         try
         {
-            // 发布到公众号草稿箱（作为视频文案）
+            var t1 = _generatedTitle1.Length > 0 ? _generatedTitle1 : TxtVideoTitle1.Text;
+            var t2 = _generatedTitle2.Length > 0 ? _generatedTitle2 : TxtVideoTitle2.Text;
             var wechatService = new WeChatService();
             var draft = new ArticleDraft
             {
-                Title = $"{TxtVideoTitle1.Text} {TxtVideoTitle2.Text}",
-                Content = $"<h2>{TxtVideoTitle1.Text} {TxtVideoTitle2.Text}</h2><p>{text.Replace("\n", "<br/>")}</p>",
+                Title = $"{t1} {t2}",
+                Content = $"<h2>{t1} {t2}</h2><p>{text.Replace("\n", "<br/>")}</p>",
                 Status = "published",
                 CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
@@ -183,9 +202,8 @@ public partial class VideoGeneratorWindow : Window
             var mediaId = await wechatService.CreateDraftAsync(draft);
             draft.MediaId = mediaId;
             AppSettings.Instance.Db.ExecuteInScope(db => db.Insertable(draft).ExecuteCommand());
-            MessageBox.Show($"视频文案已发布到公众号草稿箱!\nMediaId: {mediaId}", "成功",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"视频文案已发布到公众号!\nMediaId: {mediaId}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-        catch (Exception ex) { MessageBox.Show($"发布失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { MessageBox.Show($"发布失败: {ex.Message}"); }
     }
 }
