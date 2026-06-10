@@ -252,7 +252,7 @@ public class McpService
                 return string.Join("\n", doc.Paragraphs.Select(p => p.Text).Where(t => !string.IsNullOrWhiteSpace(t)));
             }
             if (ext is ".txt" or ".md" or ".html" or ".htm")
-                return File.ReadAllText(filePath);
+                return ReadFileAutoEncoding(filePath);
             return null;
         }
         catch { return null; }
@@ -353,7 +353,40 @@ public class McpService
         return results.OrderBy(_ => rng.Next()).Take(maxFiles).ToList();
     }
 
-    public string ReadTextFile(string filePath) => File.ReadAllText(filePath);
+    public string ReadTextFile(string filePath) => ReadFileAutoEncoding(filePath);
+
+    private static string ReadFileAutoEncoding(string filePath)
+    {
+        try { return File.ReadAllText(filePath, System.Text.Encoding.UTF8); }
+        catch { }
+        try
+        {
+            var bytes = File.ReadAllBytes(filePath);
+            // 检测UTF-8 BOM
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+                return System.Text.Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+            // 尝试GB2312/GBK(中文Windows)
+            var gb = System.Text.Encoding.GetEncoding("GB18030");
+            var text = gb.GetString(bytes);
+            if (text.Contains('?')) // GB2312失败标记
+                return System.Text.Encoding.UTF8.GetString(bytes);
+            return text;
+        }
+        catch { return ""; }
+    }
+
+    private static string? ReadFileContent(string filePath)
+    {
+        try
+        {
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            if (ext == ".docx") { /* existing code */ }
+            if (ext is ".txt" or ".md" or ".html" or ".htm" or ".bxt")
+                return ReadFileAutoEncoding(filePath);
+            return null;
+        }
+        catch { return null; }
+    }
 
     public List<string> PickRandomImages(int resourceId, int count)
     {
