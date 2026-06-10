@@ -202,7 +202,7 @@ public partial class ArticleGeneratorWindow : Window
             {
                 TbOutput.Text = task.FinalText;
                 _lastGeneratedText = task.FinalText;
-                BtnStart.Content = "重新生成";
+                BtnStart.Visibility = Visibility.Collapsed;
                 BtnToggleSettings.Visibility = Visibility.Collapsed;
                 PanelMaterials.Visibility = Visibility.Collapsed;
                 PanelSettings.Visibility = Visibility.Collapsed;
@@ -265,8 +265,7 @@ public partial class ArticleGeneratorWindow : Window
                 _lastGeneratedText = result.FinalText;
                 TbOutput.Text = result.FinalText;
                 PbProgress.Value = 100;
-                BtnStart.Content = "重新生成";
-                PanelMaterials.Visibility = Visibility.Collapsed;
+                BtnStart.Visibility = Visibility.Collapsed;
                 PanelSettings.Visibility = Visibility.Collapsed;
 
                 // 自动排版一次
@@ -276,16 +275,17 @@ public partial class ArticleGeneratorWindow : Window
         catch (OperationCanceledException)
         {
             TbProgress.Text = "已停止";
+            BtnStart.Visibility = Visibility.Visible;
         }
         catch (Exception ex)
         {
             Logger.Error("文章生成失败", ex);
             MessageBox.Show($"生成失败: {ex.Message}", "错误",
                 MessageBoxButton.OK, MessageBoxImage.Error);
+            BtnStart.Visibility = Visibility.Visible;
         }
         finally
         {
-            BtnStart.Visibility = Visibility.Visible;
             BtnStop.Visibility = Visibility.Collapsed;
             SetControlsEnabled(true);
         }
