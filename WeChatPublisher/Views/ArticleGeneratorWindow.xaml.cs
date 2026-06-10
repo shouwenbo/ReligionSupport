@@ -14,6 +14,8 @@ public partial class ArticleGeneratorWindow : Window
     private readonly SensitiveWordService _sensitiveService = new();
     private readonly McpService _mcpService = new();
     private readonly AIImageService _aiImageService = new();
+    private string? _formattedContent; // 排版后的HTML
+    private string? _coverImagePath;   // AI生成的封面图
 
     public ArticleGeneratorWindow(int? taskId = null)
     {
@@ -263,10 +265,12 @@ public partial class ArticleGeneratorWindow : Window
                 _lastGeneratedText = result.FinalText;
                 TbOutput.Text = result.FinalText;
                 PbProgress.Value = 100;
-                TbProgress.Text = "生成完成!";
                 BtnStart.Content = "重新生成";
                 PanelMaterials.Visibility = Visibility.Collapsed;
                 PanelSettings.Visibility = Visibility.Collapsed;
+
+                // 自动排版一次
+                await RunLayoutAndGenerateImages(result.FinalText);
             }
         }
         catch (OperationCanceledException)
@@ -402,25 +406,15 @@ public partial class ArticleGeneratorWindow : Window
         MessageBox.Show("草稿已保存", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
-    private async void BtnPublish_Click(object sender, RoutedEventArgs e)
+    private async Task RunLayoutAndGenerateImages(string text)
     {
-        var text = TbOutput.Text;
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            MessageBox.Show("没有可发布的内容", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
         var wechatCfg = AppSettings.Instance.GetActiveWeChatConfig();
         var contactImage = wechatCfg?.ContactImage;
-        if (string.IsNullOrWhiteSpace(contactImage) || !File.Exists(contactImage))
-            contactImage = null;
+        if (!File.Exists(contactImage)) contactImage = null;
 
-        BtnPublish.IsEnabled = false;
-        BtnPublish.Content = "AI生成封面+配图...";
         try
         {
-            // 1. 用TokenHub生成封面和配图
+            // 1. AI生成封面+配图
             string? coverPath = null, imagePath1 = null, imagePath2 = null;
             try
             {
@@ -428,13 +422,11 @@ public partial class ArticleGeneratorWindow : Window
                 var imgDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Images");
                 Directory.CreateDirectory(imgDir);
 
-                // 封面: 专用prompt, 宽图比例
-                var coverPrompt = $"公众号封面图: 信仰灵修主题, 温暖明亮色调, 简洁有力, 适合900x383比例, 无文字\n参考内容: {text[..Math.Min(text.Length, 300)]}";
+                var coverPrompt = $"公众号封面图: 信仰灵修主题, 温暖明亮色调, 简洁有力, 适合900x383比例, 无文字\n参考: {text[..Math.Min(text.Length, 300)]}";
                 var coverBytes = await imgService.GenerateImageAsync(coverPrompt, size: "1792x1024");
                 coverPath = Path.Combine(imgDir, $"cover_{DateTime.Now:HHmmss}.png");
                 await File.WriteAllBytesAsync(coverPath, coverBytes);
 
-                BtnPublish.Content = "生成正文配图...";
                 var imgPrompt = $"为信仰灵修文章生成温馨配图, 无文字, 温暖色调, 柔和画面\n{text[..Math.Min(text.Length, 500)]}";
                 var bytes = await imgService.GenerateImageAsync(imgPrompt);
                 imagePath1 = Path.Combine(imgDir, $"pub_{DateTime.Now:HHmmss}_1.png");
@@ -443,57 +435,73 @@ public partial class ArticleGeneratorWindow : Window
                 bytes = await imgService.GenerateImageAsync(imgPrompt + " 另一张");
                 imagePath2 = Path.Combine(imgDir, $"pub_{DateTime.Now:HHmmss}_2.png");
                 await File.WriteAllBytesAsync(imagePath2, bytes);
-
-                BtnPublish.Content = "智能排版中...";
             }
-            catch (Exception ex) { Logger.Warn($"配图生成失败, 继续无图发布: {ex.Message}"); }
+            catch (Exception ex) { Logger.Warn($"配图生成失败: {ex.Message}"); }
 
-            // 2. 智能排版(传入真实图片, 联系方式作为文末图片)
+            // 2. 智能排版
             var layout = new LayoutService();
             var learner = new StyleLearningService();
             var persona = learner.BuildPersonaInjection("article");
-            var formatted = await layout.FormatArticleAsync(text, "article",
-                persona, imagePath1, null); // 不传contactImage, 后面手动加
+            var formatted = await layout.FormatArticleAsync(text, "article", persona, imagePath1, null);
 
-            // 替换占位符为真实图片
+            // 替换占位符
             var placeholder = "<div class='insert-image'>此处配图</div>";
-            if (imagePath1 != null)
+            foreach (var img in new[] { imagePath1, imagePath2 })
             {
+                if (img == null) continue;
                 var idx = formatted.IndexOf(placeholder);
                 if (idx >= 0) formatted = formatted[..idx]
-                    + $"<img src='{imagePath1}' style='width:100%;border-radius:8px;margin:16px 0;'/>"
-                    + formatted[(idx + placeholder.Length)..];
-            }
-            if (imagePath2 != null)
-            {
-                var idx = formatted.IndexOf(placeholder);
-                if (idx >= 0) formatted = formatted[..idx]
-                    + $"<img src='{imagePath2}' style='width:100%;border-radius:8px;margin:16px 0;'/>"
+                    + $"<img src='{img}' style='width:100%;border-radius:8px;margin:16px 0;'/>"
                     + formatted[(idx + placeholder.Length)..];
             }
 
-            // 3. 联系方式图片放在文章末尾, 居中
+            // 联系方式放末尾
             if (contactImage != null)
-            {
-                formatted += $"\n<div style='text-align:center;margin-top:30px;'>" +
-                    $"<img src='{contactImage}' style='max-width:100%;'/>" +
-                    $"</div>";
-            }
+                formatted += $"\n<div style='text-align:center;margin-top:30px;'><img src='{contactImage}' style='max-width:100%;'/></div>";
 
-            // 4. 提取标题
+            _formattedContent = formatted;
+            _coverImagePath = coverPath;
+            BtnRelayout.Visibility = Visibility.Visible;
+            BtnPublish.IsEnabled = true;
+        }
+        catch (Exception ex) { Logger.Error("排版配图失败", ex); }
+    }
+
+    private async void BtnRelayout_Click(object sender, RoutedEventArgs e)
+    {
+        var text = TbOutput.Text;
+        if (string.IsNullOrWhiteSpace(text)) return;
+        BtnRelayout.IsEnabled = false;
+        BtnRelayout.Content = "排版中...";
+        await RunLayoutAndGenerateImages(text);
+        BtnRelayout.IsEnabled = true;
+        BtnRelayout.Content = "重新排版";
+    }
+
+    private async void BtnPublish_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_formattedContent))
+        {
+            MessageBox.Show("请先生成文章", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        BtnPublish.IsEnabled = false;
+        BtnPublish.Content = "发布中...";
+        try
+        {
             var title = "AI生成文章";
             var titleMatch = System.Text.RegularExpressions.Regex.Match(
-                text, @"^#+\s*(.+)", System.Text.RegularExpressions.RegexOptions.Multiline);
+                TbOutput.Text, @"^#+\s*(.+)", System.Text.RegularExpressions.RegexOptions.Multiline);
             if (titleMatch.Success && titleMatch.Groups[1].Value.Length > 0)
                 title = titleMatch.Groups[1].Value.Trim();
 
-            // 3. 发布
             var wechatService = new WeChatService();
             var draft = new ArticleDraft
             {
                 Title = title,
-                Content = formatted,
-                ImagePaths = coverPath,
+                Content = _formattedContent,
+                ImagePaths = _coverImagePath,
                 Status = "published",
                 CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
@@ -502,8 +510,7 @@ public partial class ArticleGeneratorWindow : Window
             draft.MediaId = mediaId;
             AppSettings.Instance.Db.ExecuteInScope(db => db.Insertable(draft).ExecuteCommand());
 
-            var contactMsg = contactImage != null ? "(含联系方式)" : "";
-            MessageBox.Show($"已发布到公众号草稿箱!{contactMsg}\n标题: {title}\nMediaId: {mediaId}",
+            MessageBox.Show($"已发布到公众号草稿箱!\n标题: {title}\nMediaId: {mediaId}",
                 "发布成功", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
