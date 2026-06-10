@@ -199,7 +199,12 @@ public partial class ArticleGeneratorWindow : Window
             if (task?.FinalText != null)
             {
                 TbOutput.Text = task.FinalText;
-                TbOutput.Text = _sensitiveService.Sanitize(task.FinalText);
+                _lastGeneratedText = task.FinalText;
+                BtnStart.Content = "重新生成";
+                BtnToggleSettings.Visibility = Visibility.Collapsed;
+                PanelMaterials.Visibility = Visibility.Collapsed;
+                PanelSettings.Visibility = Visibility.Collapsed;
+                BtnStart.Visibility = Visibility.Visible;
             }
         }
         catch { }
