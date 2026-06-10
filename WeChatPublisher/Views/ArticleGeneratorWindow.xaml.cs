@@ -84,13 +84,13 @@ public partial class ArticleGeneratorWindow : Window
                     var samples = _mcpService.SampleFiles(res.Id, 12, 300, bypassCache: true);
                     foreach (var s in samples)
                     {
-                        var title = Path.GetFileNameWithoutExtension(s.FileName);
-                        if (title.Length > 25) title = title[..25];
+                        var source = s.FileName;
+                        if (source.Length > 20) source = source[..18] + "..";
                         var preview = s.Content.Replace('\n', ' ').Replace('\r', ' ').Replace("  ", " ").Trim();
                         if (preview.Length > 60) preview = preview[..60] + "...";
                         items.Add(new SelectableItem
                         {
-                            Display = $"[{title}] {preview}",
+                            Display = $"[{source}] {preview}",
                             Data = s.FullContent,
                             IsSelected = false
                         });

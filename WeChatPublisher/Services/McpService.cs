@@ -205,9 +205,17 @@ public class McpService
             var client = new HttpMcpClient(resource.Path, key);
             var paragraphs = Task.Run(() => client.GetRandomParagraphs(8)).GetAwaiter().GetResult();
             foreach (var p in paragraphs.Take(maxFiles))
-                if (p.Length > 20)
-                    results.Add(new FileSample { FilePath = resource.Path, FileName = "话语广场",
-                        Content = p.Length > 300 ? p[..300] + "..." : p, FullContent = p });
+                if (p.Text.Length > 20)
+                {
+                    var src = string.IsNullOrWhiteSpace(p.Source) ? "话语广场" : p.Source;
+                    results.Add(new FileSample
+                    {
+                        FilePath = resource.Path,
+                        FileName = src,
+                        Content = p.Text.Length > 300 ? p.Text[..300] + "..." : p.Text,
+                        FullContent = p.Text
+                    });
+                }
         }
         catch (Exception ex) { Logger.Warn($"HttpMcp采样: {ex.Message}"); }
         return results;
@@ -454,9 +462,17 @@ public class DocxTemplateService
             var client = new HttpMcpClient(resource.Path, key);
             var paragraphs = Task.Run(() => client.GetRandomParagraphs(8)).GetAwaiter().GetResult();
             foreach (var p in paragraphs.Take(maxFiles))
-                if (p.Length > 20)
-                    results.Add(new FileSample { FilePath = resource.Path, FileName = "话语广场",
-                        Content = p.Length > 300 ? p[..300] + "..." : p, FullContent = p });
+                if (p.Text.Length > 20)
+                {
+                    var src = string.IsNullOrWhiteSpace(p.Source) ? "话语广场" : p.Source;
+                    results.Add(new FileSample
+                    {
+                        FilePath = resource.Path,
+                        FileName = src,
+                        Content = p.Text.Length > 300 ? p.Text[..300] + "..." : p.Text,
+                        FullContent = p.Text
+                    });
+                }
         }
         catch (Exception ex) { Logger.Warn($"HttpMcp采样: {ex.Message}"); }
         return results;

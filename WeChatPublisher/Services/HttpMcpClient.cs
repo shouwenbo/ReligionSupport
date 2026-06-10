@@ -71,20 +71,34 @@ public class HttpMcpClient
         throw new InvalidOperationException($"MCP {method} 错误: {err}");
     }
 
-    /// <summary>随机取 N 段优质段落</summary>
-    public async Task<List<string>> GetRandomParagraphs(int count = 8)
+    /// <summary>随机取 N 段优质段落（含来源）</summary>
+    public async Task<List<McpParagraph>> GetRandomParagraphs(int count = 8)
     {
         try
         {
             var data = await CallAsync("random_paragraphs", new { count });
-            var items = new List<string>();
+            var items = new List<McpParagraph>();
             if (data.ValueKind == JsonValueKind.Array)
                 foreach (var item in data.EnumerateArray())
-                    items.Add(item.GetProperty("content") is JsonElement c ? c.GetString() ?? "" : item.ToString());
+                {
+                    var text = item.TryGetProperty("text", out var t) ? t.GetString() ?? "" : "";
+                    var source = item.TryGetProperty("source", out var s) ? s.GetProperty("articleTitle").GetString() ?? "" : "";
+                    var category = item.TryGetProperty("source", out var sc) ? sc.TryGetProperty("category", out var cat) ? cat.GetString() ?? "" : "" : "";
+                    if (text.Length > 20)
+                        items.Add(new McpParagraph { Text = text, Source = source, Category = category });
+                }
             return items;
         }
         catch (Exception ex) { Logger.Warn($"MCP random_paragraphs 失败: {ex.Message}"); return []; }
     }
+}
+
+public class McpParagraph
+{
+    public string Text { get; set; } = "";
+    public string Source { get; set; } = "";
+    public string Category { get; set; } = "";
+}
 
     /// <summary>随机取一段（快速版）</summary>
     public async Task<string?> GetDailyBread()
