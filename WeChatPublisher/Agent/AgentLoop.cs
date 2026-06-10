@@ -92,6 +92,7 @@ public class AgentLoop
                     Services.Logger.Error($"{step.Name} 失败", ex);
                     OnLog?.Invoke("error", $"  ✗ {step.Name} 失败: {ex.Message} (详见app.log)");
                     OnStepExecuted?.Invoke(log);
+                    break; // 步骤失败立即停止后续步骤
                 }
             }
 
