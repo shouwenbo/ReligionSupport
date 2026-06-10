@@ -89,18 +89,23 @@ public partial class ArticleGeneratorWindow : Window
                     {
                         var preview = s.Content.Replace('\n', ' ').Replace('\r', ' ').Replace("  ", " ").Trim();
                         if (preview.Length > 55) preview = preview[..55] + "...";
+                        var sourceInfo = $"{res.Name}\n路径: {s.FilePath}\n类型: {res.ResourceType}";
                         items.Add(new SelectableItem
                         {
-                            Display = $"{icon} [{rname}] {preview}",
+                            Display = preview,
                             Data = s.FullContent,
                             SourceType = stype,
+                            SourceLabel = res.Name,
+                            SourceDetail = sourceInfo,
+                            SourceIcon = icon,
                             IsSelected = false
                         });
                     }
                 }
             });
             LbMaterials.ItemsSource = items;
-            TbSourceSummary.Text = $"已加载 {items.Count} 篇素材";
+            TbSourceSummary.Text = $"素材就绪";
+            TbMaterialCount.Text = $"{items.Count}篇";
         }
         catch (Exception ex) { Logger.Warn($"素材刷新失败: {ex.Message}"); }
         finally { BtnRefreshMaterials.IsEnabled = true; BtnRefreshMaterials.Content = "🔄 刷新素材"; }
@@ -142,15 +147,18 @@ public partial class ArticleGeneratorWindow : Window
                 }
             });
             LbVerses.ItemsSource = items;
+            TbVerseCount.Text = $"{items.Count}条";
         }
         catch (Exception ex) { Logger.Warn($"经文刷新失败: {ex.Message}"); }
         finally { BtnRefreshVerses.IsEnabled = true; BtnRefreshVerses.Content = "🔄 刷新经文"; }
     }
 
+    private void CheckBox_Click(object sender, RoutedEventArgs e) { } // 阻止冒泡触发ListBox选择
+
     private void LbMaterials_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (LbMaterials.SelectedItem is SelectableItem item)
-            MessageBox.Show(item.Data, "素材全文", MessageBoxButton.OK, MessageBoxImage.Information);
+            new DetailWindow(item.SourceLabel, item.SourceDetail, item.Data).Show();
     }
 
     private void MenuExcludeFolder_Click(object sender, RoutedEventArgs e)
@@ -176,7 +184,7 @@ public partial class ArticleGeneratorWindow : Window
     private void LbVerses_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (LbVerses.SelectedItem is SelectableItem item)
-            MessageBox.Show(item.Data, "经文全文", MessageBoxButton.OK, MessageBoxImage.Information);
+            new DetailWindow("随机经文", $"来自: 圣经数据库\n内容: 圣经经文段落", item.Data).Show();
     }
 
     private void LoadExistingTask(int taskId)
@@ -395,11 +403,8 @@ public class SelectableItem
     public string Display { get; set; } = "";
     public string Data { get; set; } = "";
     public string SourceType { get; set; } = "file";
+    public string SourceLabel { get; set; } = "";
+    public string SourceDetail { get; set; } = "";
+    public string SourceIcon { get; set; } = "📁";
     public bool IsSelected { get; set; }
-    public string SourceIcon => SourceType switch
-    {
-        "mcp" => "🌐",
-        "rss" => "📡",
-        _ => "📁"
-    };
 }
