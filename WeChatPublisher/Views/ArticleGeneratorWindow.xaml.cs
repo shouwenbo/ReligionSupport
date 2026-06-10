@@ -74,35 +74,7 @@ public partial class ArticleGeneratorWindow : Window
         BtnRefreshMaterials.Content = "加载中...";
         try
         {
-            var items = new List<SelectableItem>();
-            var resources = _mcpService.GetAllResources()
-                .Where(r => r.ResourceType is "LocalFolder" or "HttpMcp" or "RssFeed").ToList();
-            await Task.Run(() =>
-            {
-                foreach (var res in resources)
-                {
-                    var samples = _mcpService.SampleFiles(res.Id, 30, 300, bypassCache: true);
-                    var icon = res.ResourceType switch { "HttpMcp" => "🌐", "RssFeed" => "📡", _ => "📁" };
-                    var rname = res.Name.Length > 12 ? res.Name[..12] : res.Name;
-                    var stype = res.ResourceType switch { "HttpMcp" => "mcp", "RssFeed" => "rss", _ => "file" };
-                    foreach (var s in samples)
-                    {
-                        var preview = s.Content.Replace('\n', ' ').Replace('\r', ' ').Replace("  ", " ").Trim();
-                        if (preview.Length > 55) preview = preview[..55] + "...";
-                        var sourceInfo = $"{res.Name}\n路径: {s.FilePath}\n类型: {res.ResourceType}";
-                        items.Add(new SelectableItem
-                        {
-                            Display = preview,
-                            Data = s.FullContent,
-                            SourceType = stype,
-                            SourceLabel = res.Name,
-                            SourceDetail = sourceInfo,
-                            SourceIcon = icon,
-                            IsSelected = false
-                        });
-                    }
-                }
-            });
+            var items = await MaterialLoader.LoadMaterialsAsync(_mcpService);
             LbMaterials.ItemsSource = items;
             TbSourceSummary.Text = $"素材就绪";
             TbMaterialCount.Text = $"{items.Count}篇";
@@ -118,39 +90,16 @@ public partial class ArticleGeneratorWindow : Window
     {
         BtnRefreshVerses.IsEnabled = false;
         BtnRefreshVerses.Content = "加载中...";
+        var biblePath = AppSettings.Instance.BibleDbPath;
+        if (!File.Exists(biblePath)) return;
         try
         {
-            var items = new List<SelectableItem>();
-            var biblePath = AppSettings.Instance.BibleDbPath;
-            if (!File.Exists(biblePath)) return;
-
-            await Task.Run(() =>
-            {
-                var bible = new BibleService(biblePath);
-                for (int i = 0; i < 30; i++)
-                {
-                    try
-                    {
-                        var passage = bible.GetRandomPassage();
-                        if (passage.Length > 10)
-                        {
-                            var clean = passage.Replace('\n', ' ').Replace('\r', ' ').Replace("  ", " ").Trim();
-                            items.Add(new SelectableItem
-                            {
-                                Display = clean.Length > 60 ? clean[..60] + "..." : clean,
-                                Data = passage,
-                                IsSelected = false
-                            });
-                        }
-                    }
-                    catch { }
-                }
-            });
+            var items = await MaterialLoader.LoadVersesAsync(biblePath);
             LbVerses.ItemsSource = items;
             TbVerseCount.Text = $"{items.Count}条";
         }
         catch (Exception ex) { Logger.Warn($"经文刷新失败: {ex.Message}"); }
-        finally { BtnRefreshVerses.IsEnabled = true; BtnRefreshVerses.Content = "🔄 刷新经文"; }
+        finally { BtnRefreshVerses.IsEnabled = true; BtnRefreshVerses.Content = "🔄 刷新"; }
     }
 
     private void CheckBox_Click(object sender, RoutedEventArgs e) { } // 阻止冒泡触发ListBox选择
