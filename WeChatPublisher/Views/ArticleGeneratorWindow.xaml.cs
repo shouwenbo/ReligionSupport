@@ -98,9 +98,12 @@ public partial class ArticleGeneratorWindow : Window
             {
                 var samples = _mcpService.SampleFiles(res.Id, 15, 300, bypassCache: true);
                 foreach (var s in samples)
+                    var title = Path.GetFileNameWithoutExtension(s.FileName);
+                    var preview = s.Content.Replace('\n', ' ').Replace('\r', ' ').Replace("  ", " ");
+                    if (preview.Length > 60) preview = preview[..60] + "...";
                     items.Add(new SelectableItem
                     {
-                        Display = $"[{s.FileName}] {s.Content[..Math.Min(s.Content.Length, 60)]}...",
+                        Display = $"{title}: {preview}",
                         Data = s.FullContent,
                         IsSelected = false
                     });
@@ -130,9 +133,10 @@ public partial class ArticleGeneratorWindow : Window
                     {
                         var passage = bible.GetRandomPassage();
                         if (passage.Length > 10)
+                            var clean = passage.Replace('\n', ' ').Replace('\r', ' ').Replace("  ", " ");
                             items.Add(new SelectableItem
                             {
-                                Display = passage[..Math.Min(passage.Length, 80)],
+                                Display = clean.Length > 60 ? clean[..60] + "..." : clean,
                                 Data = passage,
                                 IsSelected = false
                             });
@@ -231,6 +235,7 @@ public partial class ArticleGeneratorWindow : Window
     {
         try
         {
+            PanelOutput.Visibility = Visibility.Visible;
             SetControlsEnabled(false);
             BtnStop.Visibility = Visibility.Visible;
             PbProgress.Value = 0;

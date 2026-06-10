@@ -49,20 +49,25 @@
                 </StackPanel>
                 <ListBox Grid.Column="0" Grid.Row="1" x:Name="LbMaterials" MaxHeight="180"
                          SelectionMode="Multiple" FontSize="11"
-                         Background="White" BorderBrush="#e0e0e0">
+                         Background="White" BorderBrush="#e0e0e0" HorizontalContentAlignment="Stretch">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="4,2"/>
                             <EventSetter Event="MouseDoubleClick" Handler="LbMaterials_MouseDoubleClick"/>
                         </Style>
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Grid Margin="0,1">
+                            <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="42"/>
+                                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="42"/>
                                 </Grid.ColumnDefinitions>
-                                <CheckBox Content="{Binding Display}" IsChecked="{Binding IsSelected}" FontSize="11"/>
-                                <Button Grid.Column="1" Content="预览" Width="38" Height="18" FontSize="9"
+                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Display}" FontSize="11"
+                                           TextTrimming="CharacterEllipsis" Margin="4,0,0,0"
+                                           VerticalAlignment="Center"/>
+                                <Button Grid.Column="2" Content="预览" Width="38" Height="18" FontSize="9"
                                         Click="BtnPreviewMaterial_Click" Tag="{Binding Data}"/>
                             </Grid>
                         </DataTemplate>
@@ -137,8 +142,8 @@
                     HorizontalAlignment="Center" Click="BtnStop_Click"/>
         </Grid>
 
-        <!-- 输出区 -->
-        <Grid Grid.Row="4" Margin="0,0,0,8">
+        <!-- 输出区（生成前隐藏） -->
+        <Grid Grid.Row="4" x:Name="PanelOutput" Margin="0,0,0,8" Visibility="Collapsed">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="250"/>
