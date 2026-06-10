@@ -90,7 +90,6 @@ public class HttpMcpClient
             return items;
         }
         catch (Exception ex) { Logger.Warn($"MCP random_paragraphs 失败: {ex.Message}"); return []; }
-    }
 }
 
 public class McpParagraph
