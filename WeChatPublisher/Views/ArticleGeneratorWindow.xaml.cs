@@ -50,41 +50,13 @@ public partial class ArticleGeneratorWindow : Window
     {
         CmbMcpResource.Items.Clear();
         var resources = _mcpService.GetAllResources();
-
         foreach (var res in resources)
             CmbMcpResource.Items.Add(new ComboBoxItem { Content = res.Name, Tag = res.Id });
-
         if (CmbMcpResource.Items.Count > 0)
             CmbMcpResource.SelectedIndex = 0;
-
-        // 异步采样首选的MCP资源
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                var samples = _mcpService.SampleFiles(
-                    resources.FirstOrDefault()?.Id ?? 0, 10, 300);
-                var count = samples.Count;
-                var cached = samples.Count(s => s.IsCached);
-                var types = samples.Select(s => Path.GetExtension(s.FileName).ToLowerInvariant())
-                    .Where(e => e.Length > 0).Distinct().ToList();
-
-                Dispatcher.Invoke(() =>
-                {
-                    if (count > 0)
-                        TbSourceSummary.Text = $"从 MCP 找到 {count} 篇素材"
-                            + (cached > 0 ? $" ({cached} 篇已缓存)" : "")
-                            + $" | 类型: {string.Join(", ", types)}";
-                    else
-                        TbSourceSummary.Text = "MCP 中暂无可用素材";
-                });
-            }
-            catch
-            {
-                Dispatcher.Invoke(() =>
-                    TbSourceSummary.Text = "MCP 扫描失败，将使用纯AI生成");
-            }
-        });
+        TbSourceSummary.Text = resources.Count > 0
+            ? $"已配置 {resources.Count} 个MCP资源, 点击刷新素材查看"
+            : "未配置MCP资源";
     }
 
     // ========== 素材选择 ==========
