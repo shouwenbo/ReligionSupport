@@ -98,10 +98,10 @@ public partial class ArticleGeneratorWindow : Window
         {
             var items = new List<SelectableItem>();
             var resources = _mcpService.GetAllResources()
-                .Where(r => r.ResourceType == "LocalFolder").ToList();
-            if (resources.Count > 0)
+                .Where(r => r.ResourceType is "LocalFolder" or "HttpMcp" or "RssFeed").ToList();
+            foreach (var res in resources)
             {
-                var samples = _mcpService.SampleFiles(resources[0].Id, 20, 300, bypassCache: true);
+                var samples = _mcpService.SampleFiles(res.Id, 15, 300, bypassCache: true);
                 foreach (var s in samples)
                     items.Add(new SelectableItem
                     {

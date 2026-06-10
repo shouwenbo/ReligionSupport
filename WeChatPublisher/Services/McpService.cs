@@ -25,6 +25,7 @@ public class McpService
             "LocalFolder" or "NetworkShare" => SampleLocalFiles(resource, maxFiles, sampleChars, bypassCache),
             "WebUrl" => SampleWebUrl(resource, sampleChars),
             "RssFeed" => SampleRssFeed(resource, maxFiles, sampleChars),
+            "HttpMcp" => SampleHttpMcp(resource, maxFiles),
             _ => []
         };
     }
@@ -190,6 +191,28 @@ public class McpService
     }
 
     // ========== 工具方法 ==========
+    // ========== HttpMcp采样 ==========
+    private static List<FileSample> SampleHttpMcp(McpResourceConfig resource, int maxFiles)
+    {
+        var results = new List<FileSample>();
+        try
+        {
+            var secretsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "secrets.json");
+            if (!File.Exists(secretsPath)) return results;
+            var secrets = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(secretsPath));
+            var key = secrets?.GetValueOrDefault("TianshangMcpKey");
+            if (string.IsNullOrWhiteSpace(key)) return results;
+            var client = new HttpMcpClient(resource.Path, key);
+            var paragraphs = client.GetRandomParagraphs(8).Result;
+            foreach (var p in paragraphs.Take(maxFiles))
+                if (p.Length > 20)
+                    results.Add(new FileSample { FilePath = resource.Path, FileName = "话语广场",
+                        Content = p.Length > 300 ? p[..300] + "..." : p, FullContent = p });
+        }
+        catch (Exception ex) { Logger.Warn($"HttpMcp采样: {ex.Message}"); }
+        return results;
+    }
+
     private static readonly string[] DocxPasswords = ["43404", "0314", "12000", "144000"];
 
     private static Xceed.Words.NET.DocX? TryOpenDocx(string filePath)
@@ -415,6 +438,28 @@ public class DocxTemplateService
 #pragma warning restore CS0618
         }
         doc.SaveAs(outputPath);
+    }
+
+    // ========== HttpMcp采样 ==========
+    private static List<FileSample> SampleHttpMcp(McpResourceConfig resource, int maxFiles)
+    {
+        var results = new List<FileSample>();
+        try
+        {
+            var secretsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "secrets.json");
+            if (!File.Exists(secretsPath)) return results;
+            var secrets = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(secretsPath));
+            var key = secrets?.GetValueOrDefault("TianshangMcpKey");
+            if (string.IsNullOrWhiteSpace(key)) return results;
+            var client = new HttpMcpClient(resource.Path, key);
+            var paragraphs = client.GetRandomParagraphs(8).Result;
+            foreach (var p in paragraphs.Take(maxFiles))
+                if (p.Length > 20)
+                    results.Add(new FileSample { FilePath = resource.Path, FileName = "话语广场",
+                        Content = p.Length > 300 ? p[..300] + "..." : p, FullContent = p });
+        }
+        catch (Exception ex) { Logger.Warn($"HttpMcp采样: {ex.Message}"); }
+        return results;
     }
 
     private static readonly string[] DocxPasswords = ["43404", "0314", "12000", "144000"];
