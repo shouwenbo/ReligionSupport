@@ -59,10 +59,8 @@ public class WeChatService
         var token = await GetAccessTokenAsync();
         var baseUrl = _settings.GetActiveWeChatConfig()!.ApiBaseUrl;
 
-        // 1. 上传封面图片获取 thumb_media_id
+        // 1. 上传AI生成的封面图片获取 thumb_media_id
         var coverPath = draft.ImagePaths;
-        if (string.IsNullOrWhiteSpace(coverPath))
-            coverPath = _settings.GetActiveWeChatConfig()?.ContactImage;
         string? thumbMediaId = null;
         if (!string.IsNullOrWhiteSpace(coverPath) && File.Exists(coverPath))
         {

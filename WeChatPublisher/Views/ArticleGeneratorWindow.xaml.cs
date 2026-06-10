@@ -417,18 +417,25 @@ public partial class ArticleGeneratorWindow : Window
             contactImage = null;
 
         BtnPublish.IsEnabled = false;
-        BtnPublish.Content = "生成配图中...";
+        BtnPublish.Content = "AI生成封面+配图...";
         try
         {
-            // 1. 用TokenHub生成配图
-            string? imagePath1 = null, imagePath2 = null;
+            // 1. 用TokenHub生成封面和配图
+            string? coverPath = null, imagePath1 = null, imagePath2 = null;
             try
             {
                 var imgService = new AIImageService();
-                var imgPrompt = $"为信仰灵修文章生成温馨配图, 无文字, 温暖色调, 柔和画面\n{text[..Math.Min(text.Length, 500)]}";
                 var imgDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Images");
                 Directory.CreateDirectory(imgDir);
 
+                // 封面: 专用prompt, 宽图比例
+                var coverPrompt = $"公众号封面图: 信仰灵修主题, 温暖明亮色调, 简洁有力, 适合900x383比例, 无文字\n参考内容: {text[..Math.Min(text.Length, 300)]}";
+                var coverBytes = await imgService.GenerateImageAsync(coverPrompt, size: "1792x1024");
+                coverPath = Path.Combine(imgDir, $"cover_{DateTime.Now:HHmmss}.png");
+                await File.WriteAllBytesAsync(coverPath, coverBytes);
+
+                BtnPublish.Content = "生成正文配图...";
+                var imgPrompt = $"为信仰灵修文章生成温馨配图, 无文字, 温暖色调, 柔和画面\n{text[..Math.Min(text.Length, 500)]}";
                 var bytes = await imgService.GenerateImageAsync(imgPrompt);
                 imagePath1 = Path.Combine(imgDir, $"pub_{DateTime.Now:HHmmss}_1.png");
                 await File.WriteAllBytesAsync(imagePath1, bytes);
@@ -441,12 +448,12 @@ public partial class ArticleGeneratorWindow : Window
             }
             catch (Exception ex) { Logger.Warn($"配图生成失败, 继续无图发布: {ex.Message}"); }
 
-            // 2. 智能排版(传入真实图片)
+            // 2. 智能排版(传入真实图片, 联系方式作为文末图片)
             var layout = new LayoutService();
             var learner = new StyleLearningService();
             var persona = learner.BuildPersonaInjection("article");
             var formatted = await layout.FormatArticleAsync(text, "article",
-                persona, imagePath1, contactImage);
+                persona, imagePath1, null); // 不传contactImage, 后面手动加
 
             // 替换占位符为真实图片
             var placeholder = "<div class='insert-image'>此处配图</div>";
@@ -465,7 +472,15 @@ public partial class ArticleGeneratorWindow : Window
                     + formatted[(idx + placeholder.Length)..];
             }
 
-            // 3. 提取标题
+            // 3. 联系方式图片放在文章末尾, 居中
+            if (contactImage != null)
+            {
+                formatted += $"\n<div style='text-align:center;margin-top:30px;'>" +
+                    $"<img src='{contactImage}' style='max-width:100%;'/>" +
+                    $"</div>";
+            }
+
+            // 4. 提取标题
             var title = "AI生成文章";
             var titleMatch = System.Text.RegularExpressions.Regex.Match(
                 text, @"^#+\s*(.+)", System.Text.RegularExpressions.RegexOptions.Multiline);
@@ -478,6 +493,7 @@ public partial class ArticleGeneratorWindow : Window
             {
                 Title = title,
                 Content = formatted,
+                ImagePaths = coverPath,
                 Status = "published",
                 CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
