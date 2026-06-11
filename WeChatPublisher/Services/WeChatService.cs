@@ -24,20 +24,29 @@ public class WeChatService
         _settings = AppSettings.Instance;
     }
 
+    private static readonly SemaphoreSlim _tokenLock = new(1, 1);
+
     public async Task<string> GetAccessTokenAsync(Models.WeChatConfig? account = null, bool forceRefresh = false)
     {
         if (!forceRefresh && _accessToken != null && DateTime.Now < _tokenExpiry)
             return _accessToken;
 
-        var config = account ?? _settings.GetActiveWeChatConfig();
-        if (config == null) throw new InvalidOperationException("未配置微信公众号");
-        if (string.IsNullOrWhiteSpace(config.AppId) || string.IsNullOrWhiteSpace(config.AppSecretEncrypted))
-            throw new InvalidOperationException("请先填写 AppID 和 AppSecret");
-        var appSecret = config.AppSecretEncrypted ?? "";
-        LogApi("获取Token", $"AppId={config.AppId}");
+        await _tokenLock.WaitAsync();
+        try
+        {
+            // 双重检查：等锁期间可能已被其他线程刷新
+            if (!forceRefresh && _accessToken != null && DateTime.Now < _tokenExpiry)
+                return _accessToken;
 
-        var url = $"{config.ApiBaseUrl}/cgi-bin/token?grant_type=client_credential&appid={config.AppId}&secret={appSecret}";
-        var response = await _httpClient.GetStringAsync(url);
+            var config = account ?? _settings.GetActiveWeChatConfig();
+            if (config == null) throw new InvalidOperationException("未配置微信公众号");
+            if (string.IsNullOrWhiteSpace(config.AppId) || string.IsNullOrWhiteSpace(config.AppSecretEncrypted))
+                throw new InvalidOperationException("请先填写 AppID 和 AppSecret");
+            var appSecret = config.AppSecretEncrypted ?? "";
+            LogApi("获取Token", $"AppId={config.AppId}");
+
+            var url = $"{config.ApiBaseUrl}/cgi-bin/token?grant_type=client_credential&appid={config.AppId}&secret={appSecret}";
+            var response = await _httpClient.GetStringAsync(url);
         using var doc = JsonDocument.Parse(response);
         var root = doc.RootElement;
 
@@ -52,6 +61,8 @@ public class WeChatService
         var errmsg = root.TryGetProperty("errmsg", out var em) ? em.GetString() : "未知错误";
         LogApi("获取Token失败", $"响应: {response}");
         throw new InvalidOperationException($"获取AccessToken失败: {errmsg}");
+        }
+        finally { _tokenLock.Release(); }
     }
 
     public async Task<string> CreateDraftAsync(Models.ArticleDraft draft)
