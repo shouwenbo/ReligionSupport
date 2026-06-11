@@ -9,7 +9,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" MinHeight="50"/>
         </Grid.RowDefinitions>
 
         <!-- 顶部状态条 -->

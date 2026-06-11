@@ -130,6 +130,20 @@ public partial class ArticleGeneratorWindow : Window
         _ = RefreshMaterialsAsync();
     }
 
+    private void SetTopPanelsOff()
+    {
+        // 隐藏顶部区域(状态栏保留), 输出区展开占满
+        LbMaterials.Visibility = Visibility.Collapsed;
+        LbVerses.Visibility = Visibility.Collapsed;
+        BtnRefreshMaterials.Visibility = Visibility.Collapsed;
+        BtnRefreshVerses.Visibility = Visibility.Collapsed;
+        BtnToggleSettings.Visibility = Visibility.Collapsed;
+        PanelSettings.Visibility = Visibility.Collapsed;
+        BtnStart.Visibility = Visibility.Collapsed;
+        TbMaterialCount.Visibility = Visibility.Collapsed;
+        TbVerseCount.Visibility = Visibility.Collapsed;
+    }
+
     private void LbVerses_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (LbVerses.SelectedItem is SelectableItem item)
@@ -144,11 +158,12 @@ public partial class ArticleGeneratorWindow : Window
                 db.Queryable<AgentTask>().InSingle(taskId));
             if (task?.FinalText != null)
             {
+                SetTopPanelsOff();
                 PanelOutput.Visibility = Visibility.Visible;
                 TbOutput.Text = task.FinalText;
                 _lastGeneratedText = task.FinalText;
                 BtnStart.Visibility = Visibility.Collapsed;
-                BtnToggleSettings.Visibility = Visibility.Collapsed;
+                BtnPublish.IsEnabled = true;
             }
         }
         catch { }
@@ -196,8 +211,7 @@ public partial class ArticleGeneratorWindow : Window
                 _lastGeneratedText = result.FinalText;
                 TbOutput.Text = result.FinalText;
                 PbProgress.Value = 100;
-                BtnStart.Visibility = Visibility.Collapsed;
-                BtnToggleSettings.Visibility = Visibility.Collapsed;
+                SetTopPanelsOff();
                 await RunLayoutAndGenerateImages(result.FinalText);
             }
         }
