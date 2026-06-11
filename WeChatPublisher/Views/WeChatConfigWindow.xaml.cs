@@ -250,7 +250,7 @@ public partial class WeChatConfigWindow : Window
         };
 
         if (!string.IsNullOrWhiteSpace(PbAppSecret.Password))
-            cfg.AppSecretEncrypted = ConfigEncryptionService.Encrypt(PbAppSecret.Password);
+            cfg.AppSecretEncrypted = ConfigEncryptionService.Encrypt(PbAppSecret.Password.Trim());
 
         if (_editingId > 0)
         {

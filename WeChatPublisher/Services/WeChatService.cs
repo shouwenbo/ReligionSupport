@@ -33,10 +33,19 @@ public class WeChatService
         if (config == null) throw new InvalidOperationException("未配置微信公众号");
         if (string.IsNullOrWhiteSpace(config.AppId) || string.IsNullOrWhiteSpace(config.AppSecretEncrypted))
             throw new InvalidOperationException("请先填写 AppID 和 AppSecret");
-        var appSecret = ConfigEncryptionService.Decrypt(config.AppSecretEncrypted);
-        var url = $"{config.ApiBaseUrl}/cgi-bin/token?grant_type=client_credential&appid={config.AppId}&secret=***";
+        string appSecret;
+        try
+        {
+            appSecret = ConfigEncryptionService.Decrypt(config.AppSecretEncrypted);
+        }
+        catch (Exception ex)
+        {
+            LogApi("AppSecret解密失败", $"可能DPAPI绑定已失效: {ex.Message}");
+            throw new InvalidOperationException("AppSecret解密失败，请重新在公众号管理窗口填写保存");
+        }
+        LogApi("获取Token", $"AppId={config.AppId}, Secret长度={appSecret.Length}");
 
-        LogApi("获取Token", $"AppId={config.AppId}");
+        var url = $"{config.ApiBaseUrl}/cgi-bin/token?grant_type=client_credential&appid={config.AppId}&secret=***";
         var response = await _httpClient.GetStringAsync(url);
         using var doc = JsonDocument.Parse(response);
         var root = doc.RootElement;
