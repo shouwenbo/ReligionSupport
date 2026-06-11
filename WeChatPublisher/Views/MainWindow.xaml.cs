@@ -132,9 +132,83 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void BtnSelfTest_Click(object sender, RoutedEventArgs e)
+    {
+        BtnSelfTest.IsEnabled = false;
+        BtnSelfTest.Content = "自测中...";
+        var results = new List<TestResult>();
+        IcTestResults.ItemsSource = results;
+
+        async Task RunTest(string name, Func<Task<bool>> test)
+        {
+            var r = new TestResult { Name = name, Status = "running" };
+            results.Add(r); IcTestResults.Items.Refresh();
+            try { r.Passed = await test(); } catch { r.Passed = false; }
+            r.Status = r.Passed ? "ok" : "fail";
+            IcTestResults.Items.Refresh();
+        }
+
+        // 1. DeepSeek AI
+        await RunTest("DeepSeek 文本 AI", async () =>
+        {
+            var cfg = AppSettings.Instance.GetActiveTextAiConfig();
+            if (cfg == null || string.IsNullOrWhiteSpace(cfg.ApiKeyEncrypted)) return false;
+            var client = new DeepSeekClient(new HttpClient { Timeout = TimeSpan.FromSeconds(10) },
+                cfg.ApiKeyEncrypted, cfg.BaseUrl, cfg.ModelName);
+            var r = await client.ChatAsync("say OK", "测试", maxTokens: 10);
+            return r.Length > 0;
+        });
+
+        // 2. TokenHub 图像 AI
+        await RunTest("TokenHub 图像 AI", async () =>
+        {
+            var srv = new AIImageService();
+            var bytes = await srv.GenerateImageAsync("blue circle",
+                provider: "TokenHub", model: "hy-image-v3.0");
+            return bytes.Length > 100;
+        });
+
+        // 3. 微信 AccessToken
+        await RunTest("微信 AccessToken", async () =>
+        {
+            var svc = new WeChatService();
+            await svc.GetAccessTokenAsync(forceRefresh: true);
+            return true;
+        });
+
+        // 4. MCP 素材扫描
+        await RunTest("MCP 素材扫描", () => Task.FromResult(
+            new McpService().GetAllResources().Count > 0));
+
+        // 5. 圣经数据库
+        await RunTest("圣经数据库", () => Task.FromResult(
+            File.Exists(AppSettings.Instance.BibleDbPath)));
+
+        // 6. FFmpeg
+        await RunTest("FFmpeg", () => Task.FromResult(
+            File.Exists(AppSettings.Instance.FfmpegPath)));
+
+        BtnSelfTest.IsEnabled = true;
+        BtnSelfTest.Content = "▶ 自测全部";
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         base.OnClosed(e);
         Application.Current.Shutdown();
     }
+}
+
+public class TestResult
+{
+    public string Name { get; set; } = "";
+    public string Status { get; set; } = "pending";
+    public bool Passed { get; set; }
+    public string Display => Status switch { "running" => $"⏳ {Name}...", "ok" => $"✅ {Name}", _ => $"❌ {Name}" };
+    public SolidColorBrush StatusBrush => Status switch
+    {
+        "ok" => new SolidColorBrush(Colors.LimeGreen),
+        "running" => new SolidColorBrush(Colors.Gray),
+        _ => new SolidColorBrush(Colors.OrangeRed)
+    };
 }

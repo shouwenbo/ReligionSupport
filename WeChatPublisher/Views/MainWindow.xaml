@@ -69,7 +69,25 @@
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="4" Header="最近任务" Padding="8">
+        <GroupBox Grid.Row="4" Header="Agent 自测" Padding="6" Margin="0,0,0,6">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <ItemsControl x:Name="IcTestResults" Grid.Column="0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="0,1">
+                                <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}" Margin="0,0,6,0"/>
+                                <TextBlock Text="{Binding Display}" FontSize="11" Foreground="{Binding StatusBrush}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Grid.Column="1" x:Name="BtnSelfTest" Content="▶ 自测全部" Width="90" Height="28"
+                        FontSize="11" Style="{StaticResource PrimaryButton}" Click="BtnSelfTest_Click"/>
+            </Grid>
+        </GroupBox>
+
+        <GroupBox Grid.Row="5" Header="最近任务" Padding="8">
             <DataGrid x:Name="DgTasks" AutoGenerateColumns="False" IsReadOnly="True"
                       SelectionMode="Single" MouseDoubleClick="DgTasks_MouseDoubleClick">
                 <DataGrid.Columns>
@@ -82,7 +100,7 @@
             </DataGrid>
         </GroupBox>
 
-        <StatusBar Grid.Row="5" Margin="0,8,0,0">
+        <StatusBar Grid.Row="6" Margin="0,8,0,0">
             <StatusBarItem>
                 <TextBlock x:Name="TbStatus" Text="就绪"/>
             </StatusBarItem>
