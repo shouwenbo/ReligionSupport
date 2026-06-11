@@ -70,18 +70,26 @@ public class WeChatService
         var token = await GetAccessTokenAsync();
         var baseUrl = _settings.GetActiveWeChatConfig()!.ApiBaseUrl;
 
-        // 1. 上传封面图片获取 thumb_media_id (优先AI生成, 其次联系方式图)
+        // 1. 上传封面图片获取 thumb_media_id
         var coverPath = draft.ImagePaths;
         if (string.IsNullOrWhiteSpace(coverPath) || !File.Exists(coverPath))
-            coverPath = _settings.GetActiveWeChatConfig()?.ContactImage;
-        string? thumbMediaId = null;
-        if (!string.IsNullOrWhiteSpace(coverPath) && File.Exists(coverPath))
         {
-            try { thumbMediaId = await UploadImageAsync(token, coverPath); }
-            catch (Exception ex) { LogApi("封面上传失败", ex.Message); }
+            coverPath = _settings.GetActiveWeChatConfig()?.ContactImage;
+            LogApi("封面", $"AI封面不存在, 使用联系方式: {coverPath}");
         }
-        // 没有封面就跳过 thumb_media_id (微信草稿允许省略)
-        if (string.IsNullOrWhiteSpace(thumbMediaId)) thumbMediaId = null;
+        string? thumbMediaId = null;
+        if (!string.IsNullOrWhiteSpace(coverPath))
+        {
+            if (File.Exists(coverPath))
+            {
+                var size = new FileInfo(coverPath).Length;
+                LogApi("封面上传", $"文件={Path.GetFileName(coverPath)}, 大小={size}字节");
+                try { thumbMediaId = await UploadImageAsync(token, coverPath); }
+                catch (Exception ex) { LogApi("封面上传失败", ex.Message); }
+            }
+            else { LogApi("封面", $"文件不存在: {coverPath}"); }
+        }
+        if (string.IsNullOrWhiteSpace(thumbMediaId)) throw new InvalidOperationException("封面上传失败, 无法发布");
 
         // 2. 清理文章内容中的本地图片路径（替换为占位或删除）
         var content = draft.Content ?? "";
