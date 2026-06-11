@@ -44,8 +44,7 @@ public partial class WeChatConfigWindow : Window
 
         if (cfg.AppSecretEncrypted != null)
         {
-            try { PbAppSecret.Password = ConfigEncryptionService.Decrypt(cfg.AppSecretEncrypted); }
-            catch { }
+            PbAppSecret.Password = cfg.AppSecretEncrypted;
         }
 
         foreach (ComboBoxItem item in CmbPlatform.Items)
@@ -250,7 +249,7 @@ public partial class WeChatConfigWindow : Window
         };
 
         if (!string.IsNullOrWhiteSpace(PbAppSecret.Password))
-            cfg.AppSecretEncrypted = ConfigEncryptionService.Encrypt(PbAppSecret.Password.Trim());
+            cfg.AppSecretEncrypted = PbAppSecret.Password.Trim();
 
         if (_editingId > 0)
         {
