@@ -70,35 +70,40 @@ public class WeChatService
         var token = await GetAccessTokenAsync();
         var baseUrl = _settings.GetActiveWeChatConfig()!.ApiBaseUrl;
 
-        // 1. 上传AI生成的封面图片获取 thumb_media_id
+        // 1. 上传封面图片获取 thumb_media_id (优先AI生成, 其次联系方式图)
         var coverPath = draft.ImagePaths;
+        if (string.IsNullOrWhiteSpace(coverPath) || !File.Exists(coverPath))
+            coverPath = _settings.GetActiveWeChatConfig()?.ContactImage;
         string? thumbMediaId = null;
         if (!string.IsNullOrWhiteSpace(coverPath) && File.Exists(coverPath))
         {
             try { thumbMediaId = await UploadImageAsync(token, coverPath); }
             catch (Exception ex) { LogApi("封面上传失败", ex.Message); }
         }
+        // 没有封面就跳过 thumb_media_id (微信草稿允许省略)
+        if (string.IsNullOrWhiteSpace(thumbMediaId)) thumbMediaId = null;
 
         // 2. 清理文章内容中的本地图片路径（替换为占位或删除）
         var content = draft.Content ?? "";
         content = System.Text.RegularExpressions.Regex.Replace(content,
             @"<img[^>]*src='[A-Za-z]:\\[^']*'[^>]*>", "<p style='text-align:center;color:#999;'>[配图]</p>");
 
-        var url = $"{baseUrl}/cgi-bin/draft/add?access_token={token[..Math.Min(6, token.Length)]}...";
+        var url = $"{baseUrl}/cgi-bin/draft/add?access_token={token}";
 
-        var article = new
+        var articleDict = new Dictionary<string, object>
         {
-            title = draft.Title ?? "无标题",
-            author = "爱与祝福同行",
-            digest = draft.Description ?? "",
-            content,
-            content_source_url = "",
-            thumb_media_id = thumbMediaId ?? "",
-            need_open_comment = 0,
-            only_fans_can_comment = 0
+            ["title"] = draft.Title ?? "无标题",
+            ["author"] = "爱与祝福同行",
+            ["digest"] = draft.Description ?? "",
+            ["content"] = content,
+            ["content_source_url"] = "",
+            ["need_open_comment"] = 0,
+            ["only_fans_can_comment"] = 0
         };
+        if (!string.IsNullOrWhiteSpace(thumbMediaId))
+            articleDict["thumb_media_id"] = thumbMediaId;
 
-        var body = new { articles = new[] { article } };
+        var body = new { articles = new[] { articleDict } };
         var httpContent = new StringContent(JsonSerializer.Serialize(body),
             System.Text.Encoding.UTF8, "application/json");
 
@@ -125,9 +130,15 @@ public class WeChatService
         var baseUrl = _settings.GetActiveWeChatConfig()!.ApiBaseUrl;
         var url = $"{baseUrl}/cgi-bin/material/add_material?access_token={token}&type=image";
 
+        var fileName = Path.GetFileName(imageFilePath);
+        var ext = Path.GetExtension(imageFilePath).ToLowerInvariant();
+        var contentType = ext switch { ".jpg" or ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", _ => "image/png" };
+
         using var formData = new MultipartFormDataContent();
-        var fileBytes = await File.ReadAllBytesAsync(imageFilePath);
-        formData.Add(new ByteArrayContent(fileBytes), "media", Path.GetFileName(imageFilePath));
+        var fileStream = File.OpenRead(imageFilePath);
+        var fileContent = new StreamContent(fileStream);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        formData.Add(fileContent, "media", fileName);
 
         var response = await _httpClient.PostAsync(url, formData);
         var json = await response.Content.ReadAsStringAsync();
