@@ -34,7 +34,7 @@ public class WeChatService
         if (string.IsNullOrWhiteSpace(config.AppId) || string.IsNullOrWhiteSpace(config.AppSecretEncrypted))
             throw new InvalidOperationException("请先填写 AppID 和 AppSecret");
         var appSecret = config.AppSecretEncrypted ?? "";
-        LogApi("获取Token", $"AppId={config.AppId}");
+        LogApi("获取Token", $"AppId={config.AppId}, Secret长度={appSecret.Length}, 前4位={appSecret.Length >= 4 ? appSecret[..4] : "无"}");
 
         var url = $"{config.ApiBaseUrl}/cgi-bin/token?grant_type=client_credential&appid={config.AppId}&secret=***";
         var response = await _httpClient.GetStringAsync(url);

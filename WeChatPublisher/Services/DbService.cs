@@ -74,6 +74,15 @@ public class DbService
         TryAddColumn(db, "AiConfigs", "ImageSize", "TEXT");
         TryAddColumn(db, "AiConfigs", "ImageCount", "INTEGER DEFAULT 1");
         TryAddColumn(db, "AiConfigs", "LogoAdd", "INTEGER DEFAULT 0");
+
+        // 清除旧的DPAPI加密AppSecret（已改为明文存储）
+        try
+        {
+            var count = db.Ado.ExecuteCommand(
+                "UPDATE WeChatConfigs SET AppSecretEncrypted='' WHERE AppSecretEncrypted IS NOT NULL AND length(AppSecretEncrypted)>50");
+            if (count > 0) Logger.Info($"DB迁移: 清除了 {count} 个旧的DPAPI加密AppSecret");
+        }
+        catch { }
     }
 
     private static void TryAddColumn(SqlSugarClient db, string table, string column, string type)
