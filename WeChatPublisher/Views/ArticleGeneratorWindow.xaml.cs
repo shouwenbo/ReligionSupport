@@ -151,8 +151,10 @@ public partial class ArticleGeneratorWindow : Window
 
     private async void BtnPublish_Click(object sender, RoutedEventArgs e)
     {
+        BtnPublish.IsEnabled = false;
+        BtnPublish.Content = "排版配图中...";
         if (string.IsNullOrWhiteSpace(_formattedContent)) { await RunLayoutAndGenerateImages(TbOutput.Text); }
-        BtnPublish.IsEnabled = false; BtnPublish.Content = "发布中...";
+        BtnPublish.Content = "发布中...";
         try
         {
             var title = "AI生成文章"; var m = System.Text.RegularExpressions.Regex.Match(TbOutput.Text, @"^#+\s*(.+)", System.Text.RegularExpressions.RegexOptions.Multiline);
