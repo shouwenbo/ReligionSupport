@@ -1,177 +1,72 @@
 <Window x:Class="WeChatPublisher.Views.ArticleGeneratorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="文章自动生成器" Height="720" Width="1000"
-        WindowStartupLocation="CenterOwner">
+        Title="文章自动生成器" Height="720" Width="900" WindowStartupLocation="CenterOwner">
     <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto" MinHeight="50"/>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/><RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- 顶部状态条 -->
         <Border Grid.Row="0" Background="#1a1a2e" CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
-            <TextBlock x:Name="TbSourceSummary" Text="准备就绪" Foreground="#a0c4ff" FontSize="13"/>
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="TbSourceSummary" Text="准备就绪" Foreground="#a0c4ff" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TbSelectedCount" Text="" Foreground="#7ec8a0" FontSize="11" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button Grid.Column="1" x:Name="BtnSelectMaterials" Content="📋 选择素材" Width="100" Height="26"
+                        FontSize="11" Click="BtnSelectMaterials_Click"/>
+            </Grid>
         </Border>
 
-        <!-- 主区域：左素材 + 右经文 -->
+        <!-- 高级设置 + 开始 -->
         <Grid Grid.Row="1" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/><ColumnDefinition Width="6"/><ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- 左侧 MCP 素材 -->
-            <GroupBox Grid.Column="0" FontSize="12" FontWeight="Bold" Foreground="#2c3e50"
-                      BorderBrush="#e0e0e0" Padding="4">
-                <GroupBox.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="MCP 素材" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="TbMaterialCount" Text="" FontSize="10" Foreground="#999"
-                                   VerticalAlignment="Center" Margin="4,0,0,0"/>
-                    </StackPanel>
-                </GroupBox.Header>
-                <Grid>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                    <Button Grid.Row="0" x:Name="BtnRefreshMaterials" Content="🔄 刷新" Width="70" Height="24"
-                            FontSize="10" HorizontalAlignment="Right" Margin="0,0,0,4"
-                            Click="BtnRefreshMaterials_Click"/>
-                    <ListBox Grid.Row="1" x:Name="LbMaterials" Background="White"
-                             BorderThickness="0" FontSize="12" HorizontalContentAlignment="Stretch"
-                             SelectionMode="Single">
-                        <ListBox.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="屏蔽此文件夹" Click="MenuExcludeFolder_Click"/>
-                            </ContextMenu>
-                        </ListBox.ContextMenu>
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="Padding" Value="6,3"/>
-                                <EventSetter Event="MouseDoubleClick" Handler="LbMaterials_MouseDoubleClick"/>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}"
-                                              VerticalAlignment="Center" Margin="0,0,6,0"
-                                              Click="CheckBox_Click"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding SourceIcon}" FontSize="13"
-                                               VerticalAlignment="Center" Width="20"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding Display}" FontSize="12"
-                                               TextTrimming="CharacterEllipsis"
-                                               VerticalAlignment="Center"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
-            </GroupBox>
-
-            <!-- 右侧 随机经文 -->
-            <GroupBox Grid.Column="2" FontSize="12" FontWeight="Bold" Foreground="#2c3e50"
-                      BorderBrush="#e0e0e0" Padding="4">
-                <GroupBox.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="随机经文" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="TbVerseCount" Text="" FontSize="10" Foreground="#999"
-                                   VerticalAlignment="Center" Margin="4,0,0,0"/>
-                    </StackPanel>
-                </GroupBox.Header>
-                <Grid>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                    <Button Grid.Row="0" x:Name="BtnRefreshVerses" Content="🔄 刷新" Width="70" Height="24"
-                            FontSize="10" HorizontalAlignment="Right" Margin="0,0,0,4"
-                            Click="BtnRefreshVerses_Click"/>
-                    <ListBox Grid.Row="1" x:Name="LbVerses" Background="White"
-                             BorderThickness="0" FontSize="12" HorizontalContentAlignment="Stretch"
-                             SelectionMode="Single">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="Padding" Value="6,3"/>
-                                <EventSetter Event="MouseDoubleClick" Handler="LbVerses_MouseDoubleClick"/>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}"
-                                              VerticalAlignment="Center" Margin="0,0,6,0"
-                                              Click="CheckBox_Click"/>
-                                    <TextBlock Grid.Column="1" Text="📖" FontSize="13"
-                                               VerticalAlignment="Center" Width="20"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding Display}" FontSize="12"
-                                               TextTrimming="CharacterEllipsis"
-                                               VerticalAlignment="Center"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
-            </GroupBox>
-        </Grid>
-
-        <!-- 按钮区 -->
-        <Grid Grid.Row="2" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="160"/>
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" x:Name="BtnToggleSettings" Content="⚙ 高级设置" Width="90" Height="26"
                     FontSize="10" Click="BtnToggleSettings_Click"/>
             <Button Grid.Column="2" x:Name="BtnStart" Content="▶ 开始生成" Width="140" Height="38"
-                    Style="{StaticResource PrimaryButton}" FontSize="14"
-                    Click="BtnStart_Click"/>
+                    Style="{StaticResource PrimaryButton}" FontSize="14" Click="BtnStart_Click"/>
         </Grid>
 
-        <!-- 高级设置面板 -->
-        <Border Grid.Row="3" x:Name="PanelSettings" Visibility="Collapsed"
+        <!-- 设置面板 -->
+        <Border Grid.Row="2" x:Name="PanelSettings" Visibility="Collapsed"
                 Background="#f8f9fa" CornerRadius="4" Padding="8" Margin="0,0,0,8">
-            <StackPanel>
-                <Grid Margin="0,2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                        <TextBlock Text="AI 温度" FontSize="10" Foreground="#999"/>
-                        <Slider x:Name="SldTemperature" Minimum="0" Maximum="1" Value="0.7"
-                                TickFrequency="0.1" IsSnapToTickEnabled="True"/>
-                        <TextBlock x:Name="TbTempValue" Text="0.7" FontSize="10" Foreground="#aaa"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Margin="0,0,8,0">
-                        <TextBlock Text="最大轮次" FontSize="10" Foreground="#999"/>
-                        <TextBox x:Name="TxtMaxRounds" Text="3" Width="40" FontSize="11"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="风格" FontSize="10" Foreground="#999"/>
-                        <ComboBox x:Name="CmbStyle" FontSize="10">
-                            <ComboBoxItem Content="AI自动" IsSelected="True"/>
-                            <ComboBoxItem Content="温情生活"/><ComboBoxItem Content="诗意感悟"/>
-                            <ComboBoxItem Content="故事叙事"/><ComboBoxItem Content="深度思考"/>
-                        </ComboBox>
-                    </StackPanel>
-                </Grid>
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                    <TextBlock Text="AI 温度" FontSize="10" Foreground="#999"/>
+                    <Slider x:Name="SldTemperature" Minimum="0" Maximum="1" Value="0.7"
+                            TickFrequency="0.1" IsSnapToTickEnabled="True"/>
+                    <TextBlock x:Name="TbTempValue" Text="0.7" FontSize="10" Foreground="#aaa"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                    <TextBlock Text="最大轮次" FontSize="10" Foreground="#999"/>
+                    <TextBox x:Name="TxtMaxRounds" Text="3" Width="40" FontSize="11"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="风格" FontSize="10" Foreground="#999"/>
+                    <ComboBox x:Name="CmbStyle" FontSize="10">
+                        <ComboBoxItem Content="AI自动" IsSelected="True"/><ComboBoxItem Content="温情生活"/>
+                        <ComboBoxItem Content="诗意感悟"/><ComboBoxItem Content="故事叙事"/><ComboBoxItem Content="深度思考"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
         </Border>
 
-        <!-- 生成结果区 -->
-        <Border Grid.Row="4" x:Name="PanelOutput" Visibility="Collapsed" Margin="0,8,0,0" Padding="8"
+        <!-- 输出区 -->
+        <Border Grid.Row="3" x:Name="PanelOutput" Visibility="Collapsed" Padding="8"
                 BorderBrush="#e0e0e0" BorderThickness="1" CornerRadius="4">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="220"/></Grid.ColumnDefinitions>
                 <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,4">
-                    <TextBlock x:Name="TbEditHint" Text="修改后点「学习风格」让下次生成更像你" FontSize="10" Foreground="#999"/>
+                    <TextBlock Text="修改后点「学习风格」让下次更像你" FontSize="10" Foreground="#999"/>
                     <Button x:Name="BtnLearn" Content="学习风格" Width="76" Height="22" FontSize="10"
                             Style="{StaticResource PrimaryButton}" Background="#6c5ce7" Margin="12,0,0,0"
                             Click="BtnLearn_Click"/>
@@ -183,7 +78,7 @@
                          FontSize="14" BorderThickness="0"/>
                 <Border Grid.Row="1" Grid.Column="1" Background="#e8ecf1" CornerRadius="3" Padding="4" Margin="4,0,0,0">
                     <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="Agent 步骤" FontSize="9" FontWeight="Bold" Foreground="#555" Margin="0,0,0,2"/>
+                    <TextBlock Grid.Row="0" Text="Agent 步骤" FontSize="9" FontWeight="Bold" Foreground="#555"/>
                     <TextBox Grid.Row="1" x:Name="TbProgress" IsReadOnly="True" Background="Transparent"
                              FontFamily="Consolas" FontSize="9" BorderThickness="0" TextWrapping="Wrap"
                              VerticalScrollBarVisibility="Auto" Text="等待开始..."/>
@@ -191,16 +86,11 @@
                     </Grid>
                 </Border>
                 <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                    <Button x:Name="BtnStop" Content="停止" Width="60" Height="26" Visibility="Collapsed"
-                            Margin="0,0,6,0" Click="BtnStop_Click"/>
-                    <Button x:Name="BtnRelayout" Content="重新排版" Width="76" Height="26" Margin="0,0,6,0"
-                            Visibility="Collapsed" Click="BtnRelayout_Click"/>
-                    <Button x:Name="BtnSaveDraft" Content="保存草稿" Width="76" Height="26" Margin="0,0,6,0"
-                            Click="BtnSaveDraft_Click"/>
-                    <Button x:Name="BtnCopy" Content="复制" Width="60" Height="26" Margin="0,0,6,0"
-                            Click="BtnCopy_Click"/>
-                    <Button x:Name="BtnPublish" Content="发布到公众号" Width="110" Height="26"
-                            Style="{StaticResource PrimaryButton}" Click="BtnPublish_Click"/>
+                    <Button x:Name="BtnStop" Content="停止" Width="60" Height="26" Visibility="Collapsed" Margin="0,0,6,0" Click="BtnStop_Click"/>
+                    <Button x:Name="BtnRelayout" Content="重新排版" Width="76" Height="26" Margin="0,0,6,0" Visibility="Collapsed" Click="BtnRelayout_Click"/>
+                    <Button x:Name="BtnSaveDraft" Content="保存草稿" Width="76" Height="26" Margin="0,0,6,0" Click="BtnSaveDraft_Click"/>
+                    <Button x:Name="BtnCopy" Content="复制" Width="60" Height="26" Margin="0,0,6,0" Click="BtnCopy_Click"/>
+                    <Button x:Name="BtnPublish" Content="发布到公众号" Width="110" Height="26" Style="{StaticResource PrimaryButton}" Click="BtnPublish_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
